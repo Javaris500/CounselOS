@@ -1,0 +1,29 @@
+# Windows / WSL metadata
+*:Zone.Identifier
+Thumbs.db
+.DS_Store
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.next/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Env — never commit filled versions
+.env
+.env.*
+!.env.example
+
+# Test artifacts
+apps/web/.auth/
+playwright-report/
+test-results/
+
+# Generated docs (see docs/README.md — never commit a build artifact)
+docs/CounselOS_FullBackend.md
