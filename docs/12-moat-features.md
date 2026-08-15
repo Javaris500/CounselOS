@@ -3,7 +3,9 @@
 
 > These two features came out of the deep research as the highest-impact additions available. Both plug into infrastructure that already exists — neither is greenfield. Wire-fraud verification rides on the document pipeline, communication log, and activity log. The deadline engine upgrades the extraction you already do. This document specifies both, and the alignment edits to schema, checklist, and project prompt follow from it.
 >
-> **Priority:** These are the two things to build after Phase 1 core ships and the pilot firm is live. They are what the research called "speed to depth in real-estate-specific logic" — the moat no incumbent owns.
+> **Priority:** These are what the research called "speed to depth in real-estate-specific logic" — the moat no incumbent owns.
+>
+> **They ship at different times.** The **TREC deadline engine (M1) ships with Module 6 in slice 3**, because slice 3's Playwright gate requires the earnest-money vs option-fee divergence to render — the slice cannot close without it. It is a correctness upgrade to extraction you're already building, not an add-on. **Wire-fraud verification (M2) is the one that waits** until Phase 1 core is E2E-green and the pilot firm is live. See `01-codebase.md` Part 3.
 
 ---
 

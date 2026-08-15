@@ -1,0 +1,94 @@
+# CounselOS — local development services
+#
+# WHAT THIS IS FOR
+#   Local Postgres and Redis so `pnpm dev` runs offline, fast, and without burning
+#   the shared Supabase project or the Upstash free-tier command budget.
+#
+# WHAT IT IS NOT
+#   Supabase Auth and Supabase Storage are not replaced here — those stay on the
+#   hosted dev project. If you want the whole Supabase stack locally instead, use
+#   the Supabase CLI (`supabase start`) and ignore the `postgres` service below.
+#
+#   It is also not the test harness. Integration and E2E tests boot their own
+#   throwaway Postgres and Redis via testcontainers (10-tdd-guide.md). Nothing here
+#   is shared with them, so you can drop this stack mid-test-run safely.
+#
+# USAGE
+#   docker compose up -d          start
+#   docker compose ps             status + health
+#   docker compose down           stop, keep data
+#   docker compose down -v        stop and DESTROY the volumes (full reset)
+
+name: counselos
+
+services:
+  # ---------------------------------------------------------------------------
+  # Postgres 16 + pgvector. The extension is created by docker/postgres/init/,
+  # which runs only on first boot of an empty volume.
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: counselos-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-counselos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-counselos}
+      POSTGRES_DB: ${POSTGRES_DB:-counselos}
+    # Dev-only durability tradeoff: makes `db:seed` and reset cycles noticeably
+    # faster. Safe here because losing this database costs one `pnpm db:seed`.
+    # Never set any of these on a real database.
+    command:
+      - postgres
+      - -c
+      - fsync=off
+      - -c
+      - synchronous_commit=off
+      - -c
+      - full_page_writes=off
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-counselos} -d ${POSTGRES_DB:-counselos}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # Redis 7. Backs the user-hydration cache, rate limits, BullMQ, and SSE
+  # pub/sub fan-out (18-nestjs-conventions.md §8).
+  #
+  # Two settings deliberately mirror production so local behaves like Railway:
+  #   appendonly       — the SSE event-ID counter survives a restart, so
+  #                      reconnect ordering doesn't silently reset
+  #   maxmemory-policy — matches the Upstash policy in 05-backend-checklist L13
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: counselos-redis
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --maxmemory
+      - "256mb"
+      - --maxmemory-policy
+      - allkeys-lru
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  postgres-data:
+  redis-data:

@@ -16,12 +16,17 @@ counselos/
 │   ├── shared/                 # types, enums, error codes — the sync contract
 │   └── config/                 # shared tsconfig, eslint, prettier
 ├── docs/                       # the spec set — see docs/README.md for the index
+├── docker/
+│   └── postgres/init/          # pgvector + pgcrypto + pg_trgm, first boot only
 ├── .github/workflows/          # CI: lint, typecheck, test, migrate
+├── docker-compose.yml          # LOCAL DEV ONLY — Postgres + Redis
 ├── package.json                # workspaces root
 ├── pnpm-workspace.yaml
 ├── turbo.json
 └── README.md
 ```
+
+**`docker-compose.yml` is local development only.** It runs Postgres (with pgvector) and Redis so `pnpm dev` works offline and without spending the shared Supabase project or the Upstash free-tier budget. It is **not** the test harness — integration and E2E tests boot their own throwaway containers via testcontainers — and it does **not** replace Supabase Auth or Storage, which stay hosted. Production images are the Railway `Dockerfile` in `05-backend-checklist.md` §17A, which is a different thing entirely.
 
 **Why a monorepo.** The frontend and backend deploy separately (Vercel + Railway) — that doesn't change. What a monorepo buys you is `packages/shared`: one source of truth for every enum, error code, and field limit. The two sync gaps found in the frontend review (a non-existent `notifications/unread` endpoint, and `PATCH .../sections` meaning two different things) would have been **compile errors** instead of spec-review findings. That's the whole argument.
 
