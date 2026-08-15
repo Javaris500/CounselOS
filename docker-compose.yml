@@ -64,7 +64,11 @@ services:
   # Two settings deliberately mirror production so local behaves like Railway:
   #   appendonly       — the SSE event-ID counter survives a restart, so
   #                      reconnect ordering doesn't silently reset
-  #   maxmemory-policy — matches the Upstash policy in 05-backend-checklist L13
+  #   maxmemory-policy — volatile-lru: evict ONLY keys that carry a TTL.
+  #                      allkeys-lru would be free to evict sse:eventid:{firmId},
+  #                      which has no TTL by design (05 §11C) and must never
+  #                      reset. Keys we can afford to lose all have TTLs; the
+  #                      ones we can't, don't. See 05-backend-checklist L13.
   # ---------------------------------------------------------------------------
   redis:
     image: redis:7-alpine
@@ -77,7 +81,7 @@ services:
       - --maxmemory
       - "256mb"
       - --maxmemory-policy
-      - allkeys-lru
+      - volatile-lru
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:

@@ -1638,7 +1638,10 @@ Two mechanisms work together. Graceful shutdown handles planned restarts. Stalle
 ### 13A — Redis Client
 
 - [ ] Redis client: Upstash serverless Redis — single instance, same connection for both application cache and BullMQ queue. One Redis URL, not two separate instances.
-- [ ] Eviction policy: `allkeys-lru` — when memory limit is hit, least recently used keys are evicted first. Cache misses recompute from DB, never return stale data.
+- [ ] Eviction policy: **`volatile-lru`** — when the memory limit is hit, evict the least recently used key **that carries a TTL**. Cache misses recompute from the DB and never return stale data.
+- [ ] **Not `allkeys-lru`.** Every key we can afford to lose has a TTL; the ones we can't, don't. `sse:eventid:{firmId}` is the counter behind SSE event ordering and is explicitly TTL-less (§11C) — `allkeys-lru` is free to evict it under memory pressure, which silently resets event IDs and breaks `Last-Event-ID` reconnect handling. `volatile-lru` makes "no TTL" mean "never evicted," so the durability decision lives with whoever sets the key.
+- [ ] Corollary: **a key with no TTL is a deliberate promise.** Any new TTL-less key must be one we genuinely cannot lose, because this policy will keep it forever. Adding one is a review item.
+- [ ] If every TTL-bearing key has already been evicted and memory is still exhausted, Redis returns OOM errors on writes rather than evicting the TTL-less keys. That's the intended failure mode — loud, not silent — and it's what the memory alert in Layer 16 exists to catch before it happens.
 - [ ] All Redis keys defined as constants in `src/common/constants/cache-keys.ts` — never inline strings. Key builder functions ensure consistent formatting:
   ```typescript
   export const CacheKey = {
