@@ -1921,7 +1921,7 @@ Distinct from application logs. Written as structured events to Sentry with `lev
 
 - [ ] `npm audit` in CI on every push — already in Layer 16. Blocks merge on HIGH or CRITICAL vulnerabilities.
 - [ ] **Dependabot** configured in `.github/dependabot.yml` — sends automated PRs when npm vulnerabilities are published. Weekly schedule, grouped by ecosystem (npm, GitHub Actions). PRs auto-assigned to the security review queue.
-- [ ] **LibreOffice version pinned** in Railway Dockerfile: `RUN apt-get install -y libreoffice=7.6.*`. Never `libreoffice` (latest). An uncontrolled LibreOffice update can break document conversion silently. Version updates are a deliberate engineering decision, not an automatic side effect of a redeploy.
+- [ ] **LibreOffice version pinned** in the Railway Dockerfile — exact version string via the `LO_VERSION` build arg, on a digest-pinned Debian base. Never `libreoffice` (latest). Full Dockerfile and rationale in §17A; that section is the source of truth for the image.
 - [ ] **Supabase JS SDK pinned** to a minor version — `"@supabase/supabase-js": "~2.39.0"`. Major version updates can introduce breaking auth changes. Pin and update deliberately.
 
 > `[PHASE 2]` Add: Stripe webhook signature verification (HMAC-SHA256, event ID deduplication in Redis), per-firm rate limits tied to plan tier, session invalidation on role change or firm cancellation (Redis key bust on user update), CSP nonce strategy for BullMQ Board, penetration test before public launch, SOC2 Type I readiness assessment.
@@ -2281,26 +2281,44 @@ Two severity levels. Both configured in Sentry Alerts → Alert Rules.
 
 ### 17A — Dockerfile
 
-- [ ] Dockerfile written — must install LibreOffice:
+**Base image: Debian (`bookworm-slim`), not Alpine.** `[LOCKED]` Alpine's musl libc is a recurring source of breakage for LibreOffice and for Node native modules. The image is larger; the debugging time saved is worth more than the megabytes. Both processes build from the same Dockerfile.
+
+- [ ] Dockerfile written — multi-stage, pnpm, must install LibreOffice:
   ```dockerfile
-  FROM node:20-alpine
-
-  # LibreOffice for DOC/DOCX conversion — pinned to minor version
-  RUN apk add --no-cache libreoffice=7.6.*
-
+  # ---- build ----
+  FROM node:20-bookworm-slim AS build
   WORKDIR /app
-  COPY package*.json ./
-  RUN npm ci --only=production
+  RUN corepack enable
+  COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+  COPY apps/api/package.json ./apps/api/
+  COPY packages/shared/package.json ./packages/shared/
+  RUN pnpm install --frozen-lockfile
+  COPY . .
+  RUN pnpm --filter shared build && pnpm --filter api build
+  RUN pnpm deploy --filter api --prod /prod/api
 
-  COPY dist ./dist
-  COPY drizzle ./drizzle
-
+  # ---- runtime ----
+  FROM node:20-bookworm-slim AS runtime
+  # LibreOffice Writer only — the full libreoffice metapackage adds ~1GB of
+  # formats we never convert. Pinned: re-check with `apt-cache policy
+  # libreoffice-writer` whenever the base image tag is bumped.
+  ARG LO_VERSION=<pin-at-scaffold-time>
+  RUN apt-get update \
+   && apt-get install -y --no-install-recommends "libreoffice-writer=${LO_VERSION}" \
+   && rm -rf /var/lib/apt/lists/*
+  WORKDIR /app
+  COPY --from=build /prod/api ./
+  COPY --from=build /app/apps/api/drizzle ./drizzle
+  USER node
   EXPOSE 3001
-  CMD ["node", "dist/main.js"]
+  CMD ["node", "dist/main.js"]        # worker service overrides: dist/worker.js
   ```
-- [ ] LibreOffice version pinned to `7.6.*` — not `latest`. Uncontrolled updates break document conversion silently.
-- [ ] Multi-stage build used — separate build stage (with devDependencies) from production image (without)
-- [ ] `drizzle/` migrations directory included in production image — migrations run on deploy
+- [ ] `LO_VERSION` filled with the exact version string from `apt-cache policy libreoffice-writer` in the pinned base image, and recorded in the PR description. **Never install unpinned** — an uncontrolled LibreOffice update breaks document conversion silently. Version bumps are a deliberate engineering decision, not a side effect of a redeploy.
+- [ ] Base image pinned by digest (`node:20-bookworm-slim@sha256:...`), so the apt snapshot the version pin resolves against doesn't drift underneath it
+- [ ] Multi-stage build used — build stage carries devDependencies, runtime image does not. `pnpm deploy --prod` produces the pruned runtime tree.
+- [ ] Runs as the non-root `node` user
+- [ ] `drizzle/` migrations directory included in the production image — migrations run on deploy
+- [ ] Smoke check in CI: build the image, run `libreoffice --headless --convert-to pdf` on a fixture DOCX, assert a PDF comes out. A broken conversion must fail the build, not the pipeline in production.
 
 ### 17B — Railway Configuration
 

@@ -181,8 +181,14 @@ Query embed, pre-filtered vector search (0.70 threshold, 6k token budget), SSE t
 *E2E gate:* question answerable from a document → cited answer; question with no relevant chunks → the exact deterministic fallback string, and Anthropic is never called; vector search scoped to transaction A returns zero of transaction B's chunks (firm isolation).
 
 **Module 6 · Deadlines** — depends on: Documents
-Extraction (staged PENDING_REVIEW), amendment superseding, confirmation flow, urgency calculator, tiered alerts, .ics download. (The TREC business-day engine is a later moat module.)
+Extraction (staged PENDING_REVIEW), amendment superseding, confirmation flow, urgency calculator, tiered alerts, .ics download.
 *E2E gate:* upload contract → deadlines extracted as PENDING_REVIEW; confirm → ACTIVE; amendment supersedes without deleting the old deadline (chain intact); alert fires once per urgency tier, not twice.
+
+**Module M1 · TREC Deadline Engine** — depends on: Deadlines
+Pure `computeDeadline()` with Texas counting rules, holidays table, the earnest-money-rolls / option-fee-doesn't divergence. See `12-moat-features.md`.
+*E2E gate:* the test suite covering every Texas holiday, leap years, and the earnest-money vs option-fee divergence on the same weekend — this suite *is* the deliverable.
+
+> **M1 ships with Module 6, in slice 3 — it is not deferred to the moat tier.** Slice 3's Playwright gate (`00-developer-guide.md` §7) requires the earnest-money vs option-fee weekend divergence to render as two different dates, each explained. That gate is unpassable without the engine, so the slice cannot close without it. M2 (wire fraud) genuinely is post-core; M1 is not.
 
 **Module 7 · Drafts** — depends on: Transactions
 Async section-by-section generation, the seven types, review + attestation, PDF download. The Opinion 705 gate.
@@ -238,9 +244,7 @@ Magic bytes, Redis rate limiting, PII masking, Helmet, input length limits, stor
 
 ### Moat tier — after Phase 1 core is fully E2E-green
 
-**Module M1 · TREC Deadline Engine** — depends on: Deadlines
-Pure `computeDeadline()` with Texas counting rules, holidays table, the earnest-money-rolls / option-fee-doesn't divergence. See `12-moat-features.md`.
-*E2E gate:* the test suite covering every Texas holiday, leap years, and the earnest-money vs option-fee divergence on the same weekend — this suite *is* the deliverable.
+*(M1 · TREC Deadline Engine is listed with Module 6 above — it ships in slice 3, not here.)*
 
 **Module M2 · Wire-Fraud Verification** — depends on: Documents · Communications
 Verified-instructions baseline, mismatch detection, block-and-confirm, audit trail. See `12-moat-features.md`.

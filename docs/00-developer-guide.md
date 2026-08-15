@@ -47,7 +47,7 @@ Install before you start:
 
 - **Node.js 20 LTS** (`.nvmrc` pins the exact version — run `nvm use`)
 - **pnpm** (`npm i -g pnpm`) — we use pnpm workspaces, not npm
-- **Docker Desktop** — for local Postgres/Redis via testcontainers and optional local services
+- **Docker** — required, not optional. Testcontainers boots real Postgres and Redis for the integration and E2E tiers, so **every module's E2E gate needs it from Module 1 onward**. `docker-compose.yml` also gives you local dev services. On WSL2: install Docker Desktop on Windows, then enable **Settings → Resources → WSL Integration** for your distro, or `docker` won't resolve inside WSL.
 - **Git**
 - A **Supabase account** (free tier) for the shared dev project
 - An **Anthropic API key**, a **Voyage AI key**, an **Upstash Redis** URL, and a **Resend** key — ask the lead for the shared dev credentials
@@ -66,23 +66,38 @@ nvm use
 # 3. Install all workspaces (api, web, shared)
 pnpm install
 
-# 4. Copy env templates — NEVER commit the filled versions
+# 4. Start local Postgres (pgvector) + Redis
+docker compose up -d
+docker compose ps            # both must read "healthy" before step 7
+
+# 5. Copy env templates — NEVER commit the filled versions
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 
-# 5. Fill apps/api/.env with the shared dev credentials (see §4)
+# 6. Fill apps/api/.env with the shared dev credentials (see §4)
 
-# 6. Run migrations against your dev database
+# 7. Run migrations against your dev database
 pnpm --filter api db:migrate
 
-# 7. Seed the Austin test fixtures (5 transactions + documents)
+# 8. Seed the Austin test fixtures (5 transactions + documents)
 pnpm --filter api db:seed
 
-# 8. Start everything (HTTP server + worker + web, parallel via turbo)
+# 9. Start everything (HTTP server + worker + web, parallel via turbo)
 pnpm dev
 ```
 
-If step 8 succeeds you'll have:
+**Step 4 is optional if you point `DATABASE_URL` and `REDIS_URL` at the hosted Supabase and Upstash dev instances instead.** Local is the default because it's faster, works offline, and doesn't spend the shared free-tier budgets. Two things differ from hosted, and env validation accounts for both:
+
+| | Local (compose) | Hosted (Supabase / Upstash) |
+|---|---|---|
+| Postgres TLS | `?sslmode=disable` | `?sslmode=require` |
+| Redis scheme | `redis://localhost:6379` | `rediss://` — **TLS required** |
+
+`validateEnvVars()` enforces `rediss://` and `sslmode=require` whenever `NODE_ENV !== 'development'`, and permits the plain-scheme localhost forms only in development. That keeps the non-negotiable intact in every environment that matters without making local dev generate certificates.
+
+Auth and Storage always come from the hosted Supabase project — compose doesn't replace those. If you want the full stack locally, use the Supabase CLI (`supabase start`) instead of the `postgres` service.
+
+If step 9 succeeds you'll have:
 - API on `http://localhost:3001`
 - Web on `http://localhost:3000`
 - The BullMQ worker attached and logging
