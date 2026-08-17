@@ -1,0 +1,61 @@
+/* Every value is a token from globals.css. No literals — see the Tokens rule. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: var(--s-1-5) var(--s-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 500;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--duration-micro) var(--ease-out);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Focus is never removed — keyboard is a first-class path, not a final pass. */
+.button:focus-visible {
+  outline: 2px solid var(--sl-400);
+  outline-offset: 2px;
+}
+
+.primary {
+  background: var(--sl-800);
+  border-color: var(--sl-800);
+  color: var(--surface-card);
+}
+.primary:hover:not(:disabled) {
+  background: var(--sl-700);
+}
+
+.secondary {
+  background: var(--surface-card);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+.secondary:hover:not(:disabled) {
+  background: var(--surface-inset);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+.ghost:hover:not(:disabled) {
+  background: var(--surface-inset);
+}
+
+.danger {
+  background: var(--urgency-critical-fg);
+  border-color: var(--urgency-critical-fg);
+  color: var(--urgency-critical-on-solid);
+}
+.danger:focus-visible {
+  outline-color: var(--urgency-critical-focus);
+}

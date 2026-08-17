@@ -30,34 +30,37 @@ on the thing she is needed to prove is circular. She starts when there is someth
 **0a deliverable:**
 
 ```
-apps/web/src/app/globals.css       Design System v5 tokens          ✅ done
-apps/web/src/components/ui/        all 12 registry primitives → flip each to `exists`
-apps/web/src/lib/api/client.ts     apiFetch — owns the auth lifecycle
-apps/web/src/lib/api/queryKeys.ts  the key module (seeded; agents append)
-apps/web/src/lib/api/mutations.ts  the mutation module (seeded; agents append)
-apps/web/src/stores/               auth.store.ts, realtime.store.ts
-apps/web/src/mocks/                MSW handlers — shared, never per-slice (06 Part 14)
-apps/web/src/app/(attorney)|(client)  layouts + route groups
+DONE  globals.css              Design System v5 tokens, 129 of them
+DONE  components/ui/           all 12 registry primitives, every row now `exists`
+DONE  lib/api/client.ts        apiFetch — single-flight refresh, USER_INACTIVE routing
+DONE  lib/api/queryKeys.ts     the key module (seeded; agents append)
+DONE  lib/api/mutations.ts     the mutation module (seeded; agents append)
+DONE  stores/                  auth.store.ts, realtime.store.ts
+DONE  mocks/                   MSW handlers — shared, never per-slice (06 Part 14)
+DONE  app/(attorney)|(client)  layouts, route groups, /auth/deactivated
 ```
 
 **0b deliverable:**
 
 ```
-L1 1C   Redis wiring (ioredis is not yet an api dependency)
-L1 1D   error envelope: exception filter, error classes, Zod pipe,
-        correlation + response + logging interceptors
-L2      Auth — JWT guard, Redis hydration, roles          [needs Supabase]
-8G      matter-level access guard
-8L      GET /v1/health/services
-        seed.ts + the five Austin fixtures (db:seed and db:reset are
-        currently broken — they point at a file that does not exist)
+DONE     L1 1C   Redis wiring — cache + subscriber connections
+DONE     L1 1D   error envelope: exception filter, error classes, Zod pipe,
+                 correlation + response + logging interceptors. E2E gate green.
+DONE     8L      GET /v1/health/services, not_configured first-class
+DONE             seed.ts + the Austin fixtures; db:seed and db:reset work again
+BLOCKED  L2      Auth — JWT guard, Redis hydration, roles      [needs Supabase]
+BLOCKED  8G      matter-level access guard                     [needs Auth]
 ```
+
+**What 0b is blocked on:** the Supabase project. `apps/api/.env` still holds placeholder
+`SUPABASE_*` values, so Module 2 cannot be built and the Slice 0 gate — which is four clauses of
+auth behaviour — cannot run.
 
 ## Queue
 
 | order | slice | agent | branch | status | playwright gate | merged |
 |---|---|---|---|---|---|---|
-| 0a | foundation: frontend | operator | — | (gates agent dispatch) | — | — |
+| 0a | foundation: frontend | operator | — | built, awaiting review | — | — |
 | 0b | foundation: backend + auth | operator | — | (gates the Slice 0 gate) | — | — |
 
 **Status:** `queued` → `integrating` → `gate-running` → `merged` | `blocked`

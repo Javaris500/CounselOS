@@ -142,6 +142,8 @@ JetBrains Mono    400/500/700        data, IDs, dates, amounts — tabular-nums
 
 Eight-step size scale. Mono uses `font-variant-numeric: tabular-nums` so columns of figures align.
 
+**The scale's values are not published here, and should be.** `globals.css` tokenises the sizes `design-system-v5.html` actually uses — `10 · 11 · 12 · 13 · 16 · 17 · 18` — sourced from the artifact by frequency (11px and 12px carry most of the UI; 10px the dense metadata). Larger display sizes up to 46px appear in the artifact but are not yet tokenised because nothing in Slice 0 renders at that scale. Publish the intended eight steps here and reconcile `globals.css` against them.
+
 ### Spacing — 4pt grid
 
 ```

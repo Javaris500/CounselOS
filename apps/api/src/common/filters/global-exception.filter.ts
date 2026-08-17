@@ -1,4 +1,5 @@
 import { type ArgumentsHost, Catch, HttpException, HttpStatus, Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/nestjs';
 import { SentryGlobalFilter } from '@sentry/nestjs/setup';
 import { ClsService } from 'nestjs-cls';
 import { ZodError } from 'zod';
@@ -10,12 +11,18 @@ import { AppException } from '../errors/app.exception';
 /**
  * The one place an error becomes a response body (04-data-contracts).
  *
- * WHY IT EXTENDS SentryGlobalFilter RATHER THAN REPLACING IT
- *   AppModule registers SentryGlobalFilter so unhandled exceptions reach
- *   Sentry. A second, independent APP_FILTER registered after it would win and
- *   silently stop reporting — errors would vanish, which is the exact state
- *   instrument.ts refuses to boot into. Extending it and delegating for the
- *   unknown case keeps reporting intact while we own the response shape.
+ * WHY IT REPORTS TO SENTRY ITSELF RATHER THAN DELEGATING
+ *   It extends SentryGlobalFilter so it is the single APP_FILTER — two
+ *   independent filters would mean the last registered wins and unhandled
+ *   exceptions silently stop reaching Sentry, the "errors vanish" state
+ *   instrument.ts exists to prevent.
+ *
+ *   But it must NOT call `super.catch()` on the HTTP path. SentryGlobalFilter
+ *   ends with `return super.catch(...)` into Nest's BaseExceptionFilter, and
+ *   that **writes a response** — Nest's default `{statusCode, message}` body.
+ *   Delegating therefore hands 500s back to the framework and our envelope
+ *   never lands, so a client parsing `error.code` reads it off an object that
+ *   is not there. Capturing explicitly keeps reporting and keeps the contract.
  *
  * WHAT A CLIENT NEVER SEES
  *   Stack traces, SQL, internal field names, or the message of an unknown
@@ -31,8 +38,8 @@ export class GlobalExceptionFilter extends SentryGlobalFilter {
   }
 
   override catch(exception: unknown, host: ArgumentsHost): void {
-    // Non-HTTP contexts (BullMQ jobs) have no response to write. Hand straight
-    // back to Sentry's filter rather than reaching for a res that isn't there.
+    // Non-HTTP contexts (BullMQ jobs) have no response to write, and there
+    // Sentry's own handling is exactly right.
     if (host.getType() !== 'http') {
       super.catch(exception, host);
       return;
@@ -55,17 +62,20 @@ export class GlobalExceptionFilter extends SentryGlobalFilter {
 
     const { status, body } = this.toEnvelope(exception, requestId);
 
-    // Unknown failures still go to Sentry — with the correlation ID already on
-    // the scope, so the report and the log lines join up.
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(
         `Unhandled exception [${requestId}]`,
         exception instanceof Error ? exception.stack : String(exception),
       );
-      super.catch(exception, host);
-      if (response.headersSent) return;
+      // Report, but keep the response. The correlation ID is already on the
+      // scope via CorrelationIdInterceptor, so the report and the log lines
+      // join up.
+      Sentry.captureException(exception, {
+        mechanism: { handled: false, type: 'auto.http.nestjs.global_filter' },
+      });
     }
 
+    // Always ours. Every error in this system has one shape.
     response.status(status).json(body);
   }
 
