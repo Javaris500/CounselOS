@@ -484,7 +484,9 @@ mocks/
   server.ts      # setupServer — tests
 ```
 
-The same handlers serve local development and the Playwright gates. Run `pnpm --filter @counselos/web exec msw init public/` once to place the service worker; the postinstall that would otherwise do it is blocked by policy (`pnpm-workspace.yaml`).
+The same handlers serve local development and the Playwright gates.
+
+`apps/web/public/mockServiceWorker.js` is **committed**, not generated at install time. MSW's postinstall is blocked by policy (`pnpm-workspace.yaml` allows postinstalls only for packages that compile a native binary), so a fresh clone that relied on it would silently have no worker and every browser-side mock would fall through to the real network. Committing it makes `pnpm install && pnpm dev` work with nothing to remember. Refresh it after an MSW upgrade with `pnpm --filter @counselos/web msw:init`; never hand-edit it.
 
 ## Mocks are built from the contract, and disagreements are logged
 

@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "test:e2e": "playwright test",
+    "msw:init": "msw init public/ --save",
     "clean": "rm -rf .next *.tsbuildinfo"
   },
   "dependencies": {
@@ -31,5 +32,10 @@
     "eslint": "catalog:",
     "msw": "catalog:",
     "typescript": "catalog:"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

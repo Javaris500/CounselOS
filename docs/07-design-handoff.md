@@ -110,12 +110,25 @@ Sage is **not** a general-purpose brand color. It marks what's been filed, recei
 
 **Never hue alone.** Every tier pairs color with a second signal — weight, an icon, a label, or a rule. This is both an accessibility requirement and how the ladder stays legible in a dense list.
 
+**Each tier is a family, not one color.** The value above is the foreground. A badge needs three: a tint background, a border, and a text color that reads on the tint. These are the applied values in `design-system-v5.html`:
+
+| Tier | Background | Border | Text on tint |
+|---|---|---|---|
+| INFO | `#EAEFF3` (sl-50) | `#CDD8E1` (sl-100) | `#1E2731` (sl-800) |
+| WARNING | `#FAF1E4` | `#E0CBA6` | `#6B460B` |
+| URGENT | `#FBEEE8` | `#E7C3B0` | `#8A3818` |
+| CRITICAL | `#FAEDEE` | `#E3BEC3` | `#7C1622` |
+
+Solid crimson buttons take `#FAF3F4` text and a `#75141F` focus ring. INFO's triple comes straight from the slate scale; the completed/sage badge does the same — `#EEF3EC` / `#C2D6BC` / `#22331E`.
+
 ### AI marker
 
 ```
 #0A5C69   light      AI-generated content
 #3FAAB8   dark
 ```
+
+Same family rule as the urgency ladder — the marker's badge triple is `#E6F2F4` background, `#A9D5DB` border, `#084B55` text.
 
 Used wherever the machine produced something — draft sections, extracted deadlines, chat answers. Attorneys must always be able to tell. This is a trust feature and an Opinion 705 compliance surface.
 

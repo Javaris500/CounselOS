@@ -38,6 +38,7 @@ leaving the thing they run on unowned is what made that ownership unsatisfiable.
   and try one they didn't.
 - IF a test is hard to write → THEN that's where the bug lives. Write it anyway.
 - IF a Pattern Registry primitive you need does not exist → THEN the foundation gate has not passed. Stop and report. Do not build it yourself, and do not work around it.
+- IF the value you need has no token in globals.css → THEN it is not yet a token. Stop and report. Never inline a hex, px, or ms — an invented value is invisible in review because one hex looks as reasonable as another.
 
 ## The divergence audit — your defining job
 After each slice and again at integration, check the five against each other:
@@ -61,9 +62,12 @@ After each slice and again at integration, check the five against each other:
 - **Switch on `error.code`, never parse `message`.** Messages change freely; codes are the contract.
 - **Check the Pattern Registry before building any recurring element.** If it's listed, use it —
   you may not build your own. If it's not listed, build it and register it in the same commit.
-- **Tokens only.** Every color, space, radius, and duration from Design System v5. No literal
-  values. Urgency uses the ladder and **never hue alone**. AI-generated content **always** carries
-  the AI-teal marker.
+- **Tokens only.** Every color, space, radius, and duration comes from Design System v5 as a
+  `var(--token)` in `apps/web/src/app/globals.css` — the machine-readable canon. Rationale,
+  contrast ratios, and the density modes are in `docs/07-design-handoff.md`; the rendered
+  reference is `docs/design-system-v5.html`. **No literal hex, px, or ms in a component, ever.**
+  Urgency uses the ladder and **never hue alone** — pair it with weight, an icon, a label, or a
+  rule, and test it with color removed. AI-generated content **always** carries the AI-teal marker.
 - **`data-testid` in the same commit as the component** — `{domain}-{element}-{action?}`,
   kebab-case. The pre-commit hook enforces it; treat it as a habit, not a hook you're fighting.
 - **Stay inside your file boundary.** `may_edit` is yours. `queryKeys.ts` and `mutations.ts` are

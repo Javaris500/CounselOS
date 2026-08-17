@@ -1,14 +1,229 @@
 /*
- * Design System v5 tokens land here in slice 0, transcribed from
- * docs/design-system-v5.html (07-design-handoff.md).
+ * DESIGN SYSTEM v5 — "Paper & Ink"
+ * The machine-readable canon. Every value here is transcribed from
+ * docs/07-design-handoff.md (names, semantics, contrast ratios) and
+ * docs/design-system-v5.html (the rendered source of truth for applied pairs).
  *
- * Placeholder only — enough for the scaffold to render. Do not invent tokens;
- * take them from the design source.
+ * ─────────────────────────────────────────────────────────────────────────────
+ * THIS FILE IS THE ONLY PLACE A RAW VALUE APPEARS.
+ *
+ * Components use var(--token). No literal hex, px, or ms in a component, ever.
+ * If you need a value that isn't here, it is not yet a token — stop and report
+ * it rather than inlining one. A hex invented in a component is invisible in
+ * review because one hex looks as reasonable as another, and it is exactly how
+ * five parallel slices end up with five slightly different greys.
+ *
+ * Verified: all 49 hexes documented in 07-design-handoff.md appear in
+ * design-system-v5.html, with zero contradictions between the two.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * Light is the default. Dark applies on the OS preference and on an explicit
+ * [data-theme="dark"], so a future in-app toggle wins in both directions.
  */
 
 :root {
   color-scheme: light;
+
+  /* ── Surfaces — bone paper ─────────────────────────────────────────────── */
+  --surface-shell: #f0eee9; /* page background */
+  --surface-card: #faf9f6;
+  --surface-inset: #e6e3dc; /* wash, inset wells */
+  --border: #dad6ce;
+  --border-strong: #c2bdb3;
+
+  /* ── Text — contrast ratios documented in 07 ───────────────────────────── */
+  --text-primary: #1b1d1e; /* 15.6:1  AAA */
+  --text-secondary: #494f53; /*  8.3:1  AAA  — use for extended reading */
+  --text-tertiary: #6e7479; /*  4.9:1 on card · 4.1:1 on paper — UI/large only */
+  --text-disabled: #9c9a94; /*  2.7:1  decorative only, never information */
+
+  /* ── Slate — the structural ink scale, 11 steps ────────────────────────── */
+  --sl-50: #eaeff3;
+  --sl-100: #cdd8e1;
+  --sl-200: #a3b2bf;
+  --sl-300: #78899a;
+  --sl-400: #5a6b7d;
+  --sl-500: #455565;
+  --sl-600: #374553;
+  --sl-700: #2a3542;
+  --sl-800: #1e2731;
+  --sl-900: #141a21;
+  --sl-950: #0d1116;
+
+  /* ── Sage — completed / received / resolved ONLY, never general brand ──── */
+  --sage-50: #eef3ec;
+  --sage-100: #dfeadb;
+  --sage-200: #c2d6bc;
+  --sage-300: #9db995;
+  --sage-400: #7a9b70;
+  --sage-500: #5e8156;
+  --sage-600: #4b6a44;
+  --sage-700: #3a5334;
+  --sage-800: #22331e;
+  --sage-900: #1b2916;
+
+  /* ── The urgency ladder — each step measurably hotter ──────────────────────
+   * NEVER hue alone. Every tier pairs its color with a second signal: weight,
+   * an icon, a label, or a rule. Accessibility requirement AND how the ladder
+   * stays legible in a dense list. Test it with color removed entirely.
+   *
+   * Each tier is a family, not one color: -fg is the hot value, and
+   * -bg/-border/-fg-on-tint are the badge triple.
+   */
+  --urgency-info-fg: #5a6b7d;
+  --urgency-info-bg: #eaeff3;
+  --urgency-info-border: #cdd8e1;
+  --urgency-info-fg-on-tint: #1e2731;
+
+  --urgency-warning-fg: #8a5e12;
+  --urgency-warning-bg: #faf1e4;
+  --urgency-warning-border: #e0cba6;
+  --urgency-warning-fg-on-tint: #6b460b;
+
+  --urgency-urgent-fg: #b14a22;
+  --urgency-urgent-bg: #fbeee8;
+  --urgency-urgent-border: #e7c3b0;
+  --urgency-urgent-fg-on-tint: #8a3818;
+
+  --urgency-critical-fg: #a62230;
+  --urgency-critical-bg: #faedee;
+  --urgency-critical-border: #e3bec3;
+  --urgency-critical-fg-on-tint: #7c1622;
+  --urgency-critical-on-solid: #faf3f4; /* text on a solid crimson button */
+  --urgency-critical-focus: #75141f;
+
+  /* ── Completed / positive — sage badge triple ──────────────────────────── */
+  --status-done-bg: #eef3ec;
+  --status-done-border: #c2d6bc;
+  --status-done-fg: #22331e;
+
+  /* ── AI marker — wraps ALL machine-generated content ───────────────────────
+   * Draft sections, extracted deadlines, chat answers. A trust feature and an
+   * Opinion 705 compliance surface: the attorney must always be able to tell.
+   */
+  --ai: #0a5c69;
+  --ai-bg: #e6f2f4;
+  --ai-border: #a9d5db;
+  --ai-fg-on-tint: #084b55;
+
+  /* ── Typography ────────────────────────────────────────────────────────────
+   * Font loading is wired in the (attorney) layout, not here.
+   * Mono carries tabular-nums so columns of figures align.
+   */
+  --font-serif: Newsreader, ui-serif, Georgia, serif; /* headings, legal gravity */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* ── Spacing — 4pt grid ────────────────────────────────────────────────── */
+  --s-0-5: 2px;
+  --s-1: 4px;
+  --s-1-5: 6px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-14: 56px;
+
+  /* ── Radius ────────────────────────────────────────────────────────────── */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 999px;
+
+  /* ── Elevation — 5 layers ──────────────────────────────────────────────────
+   * 0 flat · 1 line · 2 line-strong + sm · 3 md · 4 lg + backdrop
+   */
+  --shadow-sm: 0 1px 2px rgba(27, 29, 30, 0.12);
+  --shadow-md: 0 4px 12px rgba(27, 29, 30, 0.1);
+  --shadow-lg: 0 12px 32px rgba(27, 29, 30, 0.14);
+  --shadow-overlay: 0 1px 2px rgba(27, 29, 30, 0.04), 0 10px 28px rgba(27, 29, 30, 0.07);
+
+  /* ── Motion ────────────────────────────────────────────────────────────── */
+  --duration-micro: 80ms; /* hover, press */
+  --duration-standard: 140ms; /* state change */
+  --duration-entrance: 240ms; /* drawer, modal */
+  --duration-large: 320ms; /* large surface */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --ease-settle: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ── Density — attorney surfaces default compact; client page comfortable ─ */
+  --row-compact: 32px;
+  --row-comfortable: 48px;
+  --pad-compact: var(--s-3);
+  --pad-comfortable: var(--s-5);
 }
+
+/*
+ * Dark — neutral shell, not an inverted paper. Surfaces and text swap; the
+ * slate and sage scales do not (they are scales, and a step means the same
+ * thing in both themes). Urgency uses the documented dark foreground values.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --surface-shell: #0b0c0e;
+    --surface-base: #16181b;
+    --surface-card: #1e2126;
+    --surface-raised: #272b31;
+    --surface-overlay: #2e333a;
+    --surface-inset: #16181b;
+    --border: #2b2f35;
+    --border-strong: #3a4048;
+
+    --text-primary: #f1f3f4; /* 14.6:1  AAA */
+    --text-secondary: #a2a9af; /*  6.9:1  AA  */
+    --text-tertiary: #7b8288; /*  4.6:1  AA  */
+    --text-disabled: #4c5258; /*  2.2:1  decorative only */
+
+    --urgency-info-fg: #78899a;
+    --urgency-warning-fg: #d19a3c;
+    --urgency-urgent-fg: #e2794e;
+    --urgency-critical-fg: #e4636f;
+
+    --ai: #3faab8;
+
+    --shadow-sm: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --surface-shell: #0b0c0e;
+  --surface-base: #16181b;
+  --surface-card: #1e2126;
+  --surface-raised: #272b31;
+  --surface-overlay: #2e333a;
+  --surface-inset: #16181b;
+  --border: #2b2f35;
+  --border-strong: #3a4048;
+
+  --text-primary: #f1f3f4;
+  --text-secondary: #a2a9af;
+  --text-tertiary: #7b8288;
+  --text-disabled: #4c5258;
+
+  --urgency-info-fg: #78899a;
+  --urgency-warning-fg: #d19a3c;
+  --urgency-urgent-fg: #e2794e;
+  --urgency-critical-fg: #e4636f;
+
+  --ai: #3faab8;
+
+  --shadow-sm: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+}
+
+/* ── Reset ──────────────────────────────────────────────────────────────── */
 
 * {
   box-sizing: border-box;
@@ -21,11 +236,26 @@ body {
 }
 
 body {
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
+  background: var(--surface-shell);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
   line-height: 1.5;
+}
+
+/* Data, IDs, dates, amounts — figures must align in a column. */
+.tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 07: prefers-reduced-motion is honored — animations collapse to 0.01ms. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
