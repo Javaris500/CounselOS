@@ -91,9 +91,10 @@ catalog:
 #   esbuild        — bundler binary behind tsx and drizzle-kit
 #   unrs-resolver  — native module resolver used by eslint
 # @scarf/scarf is deliberately absent: it's analytics, and nothing breaks
-# without it. msw is deliberately absent too — its postinstall only prints
-# guidance about `msw init`; it compiles nothing, and the worker file is placed
-# explicitly by that command instead.
+# without it. msw is deliberately absent too — it compiles nothing, and its
+# worker script is committed at apps/web/public/mockServiceWorker.js rather
+# than generated at install time, so a fresh clone needs no postinstall at all.
+# Refresh it after an msw upgrade with `pnpm --filter @counselos/web msw:init`.
 onlyBuiltDependencies:
   - esbuild
   - unrs-resolver
