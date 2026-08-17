@@ -33,6 +33,7 @@
     "@sentry/nestjs": "catalog:",
     "drizzle-orm": "catalog:",
     "helmet": "catalog:",
+    "ioredis": "catalog:",
     "nestjs-cls": "catalog:",
     "nestjs-zod": "catalog:",
     "postgres": "catalog:",

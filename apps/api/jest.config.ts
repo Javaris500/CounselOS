@@ -21,19 +21,10 @@ const common = {
 };
 
 const config: Config = {
-  /**
-   * TEMPORARY — remove once all three tiers have tests.
-   *
-   * Jest exits 1 when a project matches no files, so with the unit and e2e
-   * tiers still empty, `pnpm test` would be red before a single module exists.
-   * A suite that is always red is a suite people stop reading.
-   *
-   * The cost is real: this also makes a broken testMatch pass silently. It stops
-   * being an acceptable trade the moment Module 1 lands — its E2E test is
-   * written first, by the process in 01-codebase.md Part 3, so every tier has
-   * files from that point on. Delete this line then.
-   */
-  passWithNoTests: true,
+  // `passWithNoTests` was here while the unit and e2e tiers were empty. Removed
+  // when Module 1 landed, exactly as that note said it should be: all three
+  // tiers now have files, so an empty project again means a broken testMatch —
+  // and jest exiting 1 is the correct way to find out.
   projects: [
     {
       ...common,
