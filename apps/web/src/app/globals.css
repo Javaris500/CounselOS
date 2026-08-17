@@ -26,10 +26,24 @@
 
   /* ── Surfaces — bone paper ─────────────────────────────────────────────── */
   --surface-shell: #f0eee9; /* page background */
+  --surface-base: #f0eee9; /* light has no separate base layer — same as shell */
   --surface-card: #faf9f6;
+  --surface-raised: #faf9f6; /* elevation 2/3 in light is a shadow, not a fill */
+  --surface-overlay: #faf9f6; /* elevation 4 likewise — see the note below */
   --surface-inset: #e6e3dc; /* wash, inset wells */
   --border: #dad6ce;
   --border-strong: #c2bdb3;
+
+  /*
+   * Every token above is defined here in :root, including the three that only
+   * *change* in dark. A token whose sole definition lives inside a
+   * prefers-color-scheme block resolves to nothing in light mode, and
+   * var(--surface-raised) silently renders transparent — which looks like a
+   * missing background rather than a missing token.
+   *
+   * In light, elevation is carried by shadow and border (07 "Elevation");
+   * in dark it is carried by a lighter fill. Same names, different mechanism.
+   */
 
   /* ── Text — contrast ratios documented in 07 ───────────────────────────── */
   --text-primary: #1b1d1e; /* 15.6:1  AAA */
@@ -114,6 +128,21 @@
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
+  /* ── Type sizes ────────────────────────────────────────────────────────────
+   * 07 names an "Eight-step size scale" but does not publish its values, so
+   * these are the sizes design-system-v5.html actually uses, ordered by how
+   * heavily: 11px and 12px carry most of the UI, 10px the dense metadata.
+   * Sourced, not invented — but 07 should publish the full scale, at which
+   * point this block is reconciled against it rather than replaced.
+   */
+  --text-2xs: 10px;
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 13px;
+  --text-md: 16px;
+  --text-lg: 17px;
+  --text-xl: 18px;
+
   /* ── Spacing — 4pt grid ────────────────────────────────────────────────── */
   --s-0-5: 2px;
   --s-1: 4px;
@@ -147,6 +176,7 @@
   --duration-standard: 140ms; /* state change */
   --duration-entrance: 240ms; /* drawer, modal */
   --duration-large: 320ms; /* large surface */
+  --duration-loop: 700ms; /* continuous loops — spinner, skeleton pulse */
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
   --ease-settle: cubic-bezier(0.2, 0, 0, 1);

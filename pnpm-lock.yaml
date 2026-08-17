@@ -294,6 +294,9 @@ importers:
       swr:
         specifier: 'catalog:'
         version: 2.5.1(react@19.2.8)
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
       zustand:
         specifier: 'catalog:'
         version: 5.0.15(@types/react@19.2.18)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))

@@ -1,0 +1,12 @@
+.shell {
+  min-height: 100dvh;
+  background: var(--surface-shell);
+}
+
+.main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--s-10) var(--s-6);
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+}

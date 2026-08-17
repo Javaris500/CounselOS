@@ -1,0 +1,49 @@
+.drawer {
+  margin: 0 0 0 auto;
+  height: 100dvh;
+  max-height: 100dvh;
+  width: min(420px, 100vw);
+  padding: 0;
+  border: none;
+  border-left: 1px solid var(--border);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-lg);
+  animation: slide-in var(--duration-entrance) var(--ease-decelerate);
+}
+
+.drawer::backdrop {
+  background: rgb(27 29 30 / 0.32);
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  height: 100%;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--text-secondary);
+}

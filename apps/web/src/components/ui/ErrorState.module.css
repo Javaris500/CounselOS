@@ -1,0 +1,24 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  border: 1px solid var(--urgency-critical-border);
+  border-radius: var(--radius-md);
+  background: var(--urgency-critical-bg);
+}
+
+.message {
+  margin: 0;
+  max-width: 60ch;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--urgency-critical-fg-on-tint);
+}
+
+.requestId {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}

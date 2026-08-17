@@ -1,0 +1,48 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: var(--s-0-5) var(--s-2);
+  border: 1px solid;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.neutral {
+  background: var(--surface-inset);
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+.done {
+  background: var(--status-done-bg);
+  border-color: var(--status-done-border);
+  color: var(--status-done-fg);
+}
+
+/* The ladder. Weight climbs with the tier so severity survives greyscale. */
+.info {
+  background: var(--urgency-info-bg);
+  border-color: var(--urgency-info-border);
+  color: var(--urgency-info-fg-on-tint);
+}
+.warning {
+  background: var(--urgency-warning-bg);
+  border-color: var(--urgency-warning-border);
+  color: var(--urgency-warning-fg-on-tint);
+  font-weight: 600;
+}
+.urgent {
+  background: var(--urgency-urgent-bg);
+  border-color: var(--urgency-urgent-border);
+  color: var(--urgency-urgent-fg-on-tint);
+  font-weight: 600;
+}
+.critical {
+  background: var(--urgency-critical-bg);
+  border-color: var(--urgency-critical-border);
+  color: var(--urgency-critical-fg-on-tint);
+  font-weight: 700;
+}

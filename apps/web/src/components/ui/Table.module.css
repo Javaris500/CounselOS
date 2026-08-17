@@ -1,0 +1,44 @@
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+}
+
+.caption {
+  padding-bottom: var(--s-2);
+  text-align: left;
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+}
+
+.table th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border);
+}
+
+.table td {
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
+}
+
+.compact th,
+.compact td {
+  height: var(--row-compact);
+  padding: 0 var(--pad-compact);
+}
+
+.comfortable th,
+.comfortable td {
+  height: var(--row-comfortable);
+  padding: 0 var(--pad-comfortable);
+}
+
+/* Figures must align down the column — see the component note. */
+.numeric {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}

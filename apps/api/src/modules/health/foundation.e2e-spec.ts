@@ -1,8 +1,39 @@
-import { INestApplication } from '@nestjs/common';
+import { Controller, Get, INestApplication, Module } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
+import { z } from 'zod';
 
 import { AppModule } from '../../app.module';
+
+/**
+ * Routes that exist only in this spec, mounted alongside AppModule.
+ *
+ * The 500 and 422 paths cannot be reached through any real route yet — Module 1
+ * ships no endpoint that takes a body or throws. Adding a throwing route to
+ * production code to make a test possible would be worse than the gap, so the
+ * test brings its own.
+ *
+ * This is not hypothetical coverage: the unknown-error path is the one that
+ * must leak nothing, and it was silently returning Nest's default body until
+ * this test existed.
+ */
+@Controller('__test')
+class ExplodingController {
+  @Get('boom')
+  boom(): never {
+    throw new Error('Internal detail: connection string postgres://user:pw@host/db');
+  }
+
+  @Get('zod')
+  zod(): never {
+    // A ZodError escaping a service, rather than being caught by the pipe.
+    z.object({ email: z.email() }).parse({ email: 'nope' });
+    throw new Error('unreachable');
+  }
+}
+
+@Module({ controllers: [ExplodingController] })
+class TestOnlyModule {}
 
 /**
  * MODULE 1 — THE E2E GATE (01-codebase.md Part 3).
@@ -23,7 +54,9 @@ describe('Module 1 — foundation (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule, TestOnlyModule],
+    }).compile();
     app = moduleRef.createNestApplication();
     // Mirror main.ts. The prefix is part of the contract — every documented
     // route is /v1/*, health included.
@@ -140,6 +173,50 @@ describe('Module 1 — foundation (e2e)', () => {
           }),
         );
       }
+    });
+  });
+
+  describe('unknown errors — the path that must leak nothing', () => {
+    it('returns INTERNAL_ERROR in OUR envelope, not the framework default', async () => {
+      // Regression test. The filter previously delegated 500s to
+      // SentryGlobalFilter, which ends in BaseExceptionFilter and WRITES Nest's
+      // own {statusCode, message} body. The envelope never landed, so a client
+      // reading error.code got it off an object that did not exist.
+      const res = await request(app.getHttpServer()).get('/v1/__test/boom');
+
+      expect(res.status).toBe(500);
+      expect(res.body.success).toBe(false);
+      expect(res.body.error.code).toBe('INTERNAL_ERROR');
+      expect(res.body.error.requestId).toEqual(expect.any(String));
+      expect(res.body).not.toHaveProperty('statusCode');
+    });
+
+    it('leaks nothing from the thrown error — not even its message', async () => {
+      const res = await request(app.getHttpServer()).get('/v1/__test/boom');
+      const body = JSON.stringify(res.body);
+
+      // The thrown message deliberately contains a connection string, because
+      // that is the realistic shape of an internal detail escaping.
+      expect(body).not.toMatch(/postgres:\/\//);
+      expect(body).not.toMatch(/Internal detail/);
+      expect(body).not.toMatch(/\bat\s+\w+\s+\(/);
+      expect(res.body.error.message).toBe('An unexpected error occurred.');
+    });
+
+    it('still carries the correlation ID on a 500', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/v1/__test/boom')
+        .set('x-request-id', 'e2e-500-trace');
+      expect(res.headers['x-request-id']).toBe('e2e-500-trace');
+      expect(res.body.error.requestId).toBe('e2e-500-trace');
+    });
+
+    it('maps an escaped ZodError to 422 with field details', async () => {
+      const res = await request(app.getHttpServer()).get('/v1/__test/zod');
+
+      expect(res.status).toBe(422);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+      expect(res.body.error.details).toHaveProperty('email');
     });
   });
 
