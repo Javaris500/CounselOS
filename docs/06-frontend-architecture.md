@@ -389,8 +389,10 @@ export const createCommunicationSchema = z.object({
 })
 ```
 
-Frontend: `useForm({ resolver: zodResolver(createCommunicationSchema) })`.
+Frontend: **`react-hook-form`** with **`@hookform/resolvers`** — `useForm({ resolver: zodResolver(createCommunicationSchema) })`.
 Backend: the same schema in the `ZodValidationPipe`.
+
+Those two packages are the canonical form stack; there is no hand-rolled form in this codebase. The Pattern Registry lists the Form primitive as exactly this pairing, and a slice that rolls its own is a registry violation.
 
 **Server error mapping:** a 422 returns `error.details` keyed by field name. Map it onto the form with `setError(field, { message })` so server-side failures surface exactly where client-side ones do.
 
@@ -416,6 +418,10 @@ apps/web/src/
 │       ├── useGlobalEvents.ts
 │       ├── useDocumentStream.ts
 │       └── useChatStream.ts
+├── mocks/                   # MSW — shared handlers, never per-slice (Part 14)
+│   ├── handlers.ts
+│   ├── browser.ts
+│   └── server.ts
 ├── stores/
 │   ├── auth.store.ts
 │   └── realtime.store.ts
@@ -455,6 +461,39 @@ This is the same discipline as the chat no-hallucination fallback: when the syst
 
 ---
 
+# Part 14 — Mocking the API
+
+**MSW (Mock Service Worker) is the mocking approach.** Frontend slices are built against mocks before their backend module lands; MSW is how.
+
+## The rule: stub at the network layer, never above `apiFetch`
+
+**Mocking `apiFetch` itself is forbidden.** `apiFetch` owns the entire auth lifecycle — 401 detection, single-flight refresh, retry-once, `USER_INACTIVE` routing to `/auth/deactivated`, and the `bumpTokenVersion()` that re-establishes the SSE connection (Part 6). Replace it with a stub and every one of those paths is skipped silently. The tests pass, the surface looks finished, and the first real 401 in production is the first time that code has ever run.
+
+MSW intercepts at `fetch`, one level below. `apiFetch` executes for real against a fake network, so a mocked 401 exercises the actual refresh-and-retry path. That is the whole reason for choosing it over a fetch stub.
+
+## Handlers are shared, never per-slice
+
+`apps/web/src/mocks/handlers.ts` is one file for the whole app.
+
+Five agents writing their own mock of `GET /v1/transactions/:id` produces five subtly different shapes, and each slice then passes against its own private idea of the contract. One handler set means one contract, and a disagreement surfaces as a merge conflict instead of a production bug.
+
+```
+mocks/
+  handlers.ts    # every endpoint, one definition each
+  browser.ts     # setupWorker — dev
+  server.ts      # setupServer — tests
+```
+
+The same handlers serve local development and the Playwright gates. Run `pnpm --filter @counselos/web exec msw init public/` once to place the service worker; the postinstall that would otherwise do it is blocked by policy (`pnpm-workspace.yaml`).
+
+## Mocks are built from the contract, and disagreements are logged
+
+Handlers are written against `04-data-contracts.md`, which is the response-shape contract. Where a response shape and the database disagree, `03-schema.md` wins for data shape — a contract can only return what the schema stores.
+
+The Playwright gate against the real backend is what proves mock and reality agreed. Every mismatch it exposes is a **documentation defect**, logged in `.team-5/shared/contract-drift.md` and fixed in the contract doc — never patched locally in the component. A local patch fixes one branch and leaves the doc wrong for everyone building after you. Repeated drift in one area means the contract doc is unreliable in that area, which is a systemic fix, not a local one.
+
+---
+
 ## Quick Reference
 
 | Question | Answer |
@@ -468,6 +507,8 @@ This is the same discipline as the chat no-hallucination fallback: when the syst
 | When optimistic? | Creates on a list the user is watching — nothing else |
 | Where do in-flight chat tokens live? | Component state, committed to SWR on completion |
 | Where do validation schemas live? | `packages/shared`, imported by both sides |
+| How is the API mocked? | MSW at the network layer — never stub `apiFetch` itself |
+| Where do mock handlers live? | `mocks/handlers.ts` — one shared set, never per-slice |
 
 ---
 
