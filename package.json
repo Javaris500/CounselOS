@@ -1,0 +1,37 @@
+{
+  "name": "counselos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-native case management for real estate law. Phase 1.",
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "packageManager": "pnpm@10.33.2",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "test:int": "turbo run test:int",
+    "test:e2e": "turbo run test:e2e",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json,yml,yaml}\"",
+    "db:generate": "pnpm --filter @counselos/api db:generate",
+    "db:migrate": "pnpm --filter @counselos/api db:migrate",
+    "db:seed": "pnpm --filter @counselos/api db:seed",
+    "db:reset": "pnpm --filter @counselos/api db:reset",
+    "db:studio": "pnpm --filter @counselos/api db:studio",
+    "services:up": "docker compose up -d",
+    "services:down": "docker compose down",
+    "services:reset": "docker compose down -v && docker compose up -d"
+  },
+  "devDependencies": {
+    "@counselos/config": "workspace:*",
+    "prettier": "catalog:",
+    "turbo": "catalog:",
+    "typescript": "catalog:"
+  }
+}

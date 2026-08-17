@@ -109,10 +109,10 @@ Railway deployment
 
 ### 1F — API Versioning `[CRITICAL — must be set before first endpoint ships]`
 
-- [ ] `app.setGlobalPrefix('v1', { exclude: ['/health'] })` in `main.ts`
+- [ ] `app.setGlobalPrefix('v1')` in `main.ts` — no `exclude`. Health lives at `/v1/health`, matching Module 1's E2E gate and the smoke test in `00 §3`; Railway's healthcheck path is configurable and points there. Excluding it produced two different documented URLs for one endpoint.
+- [ ] **Do not also call `app.enableVersioning()`.** URI versioning adds its own `v1` segment on top of the global prefix, so using both silently serves everything at `/v1/v1/...`. Nest logs the route as `/v1/health (version: 1)`, which looks correct while every request 404s — a genuinely confusing hour. Phase 1 has one API version; the prefix is enough.
 - [ ] All routes are `/v1/{resource}` from day one — cannot be added after the law firm integrates their intake form
-- [ ] `/health` stays at root — Railway uses it for health monitoring and must not be versioned
-- [ ] All documented routes in this checklist understood to be prefixed `/v1/` — `/transactions/:id` means `/v1/transactions/:id`
+- [ ] All documented routes in this checklist understood to be prefixed `/v1/` — `/transactions/:id` means `/v1/transactions/:id`, and that includes health
 - [ ] `[PHASE 2]` Enable `app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' })` when introducing breaking v2 routes. Add `Deprecation` and `Sunset` headers to v1 responses.
 
 ### 1F — Health Check

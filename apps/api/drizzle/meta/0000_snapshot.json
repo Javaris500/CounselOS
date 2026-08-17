@@ -1,0 +1,327 @@
+{
+  "id": "3d4dc22f-a9a4-412d-979d-412192a834b3",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {},
+  "enums": {
+    "public.checklist_item_status": {
+      "name": "checklist_item_status",
+      "schema": "public",
+      "values": [
+        "PENDING",
+        "RECEIVED",
+        "WAIVED",
+        "NOT_APPLICABLE"
+      ]
+    },
+    "public.communication_direction": {
+      "name": "communication_direction",
+      "schema": "public",
+      "values": [
+        "INBOUND",
+        "OUTBOUND"
+      ]
+    },
+    "public.communication_type": {
+      "name": "communication_type",
+      "schema": "public",
+      "values": [
+        "PHONE_CALL",
+        "EMAIL",
+        "IN_PERSON",
+        "TEXT",
+        "VOICEMAIL",
+        "OTHER"
+      ]
+    },
+    "public.deadline_status": {
+      "name": "deadline_status",
+      "schema": "public",
+      "values": [
+        "PENDING_REVIEW",
+        "ACTIVE",
+        "COMPLETED",
+        "DISMISSED"
+      ]
+    },
+    "public.deadline_type": {
+      "name": "deadline_type",
+      "schema": "public",
+      "values": [
+        "OPTION_PERIOD_EXPIRY",
+        "OPTION_FEE_DELIVERY",
+        "EARNEST_MONEY_DELIVERY",
+        "FINANCING_CONTINGENCY",
+        "INSPECTION_DEADLINE",
+        "CLOSING_DATE",
+        "TITLE_COMMITMENT_DEADLINE",
+        "SURVEY_DEADLINE",
+        "HOA_APPROVAL",
+        "POSSESSION_DATE",
+        "OTHER"
+      ]
+    },
+    "public.deadline_urgency": {
+      "name": "deadline_urgency",
+      "schema": "public",
+      "values": [
+        "INFO",
+        "WARNING",
+        "URGENT",
+        "CRITICAL"
+      ]
+    },
+    "public.document_processing_status": {
+      "name": "document_processing_status",
+      "schema": "public",
+      "values": [
+        "PENDING",
+        "PROCESSING",
+        "EXTRACTING",
+        "EMBEDDING",
+        "READY",
+        "FAILED"
+      ]
+    },
+    "public.document_type": {
+      "name": "document_type",
+      "schema": "public",
+      "values": [
+        "PURCHASE_AGREEMENT",
+        "LEASE",
+        "TITLE_COMMITMENT",
+        "SURVEY",
+        "INSPECTION_REPORT",
+        "CLOSING_DISCLOSURE",
+        "DEED",
+        "AMENDMENT",
+        "ADDENDUM",
+        "WIRE_INSTRUCTIONS",
+        "CORRESPONDENCE",
+        "OTHER"
+      ]
+    },
+    "public.draft_generated_by": {
+      "name": "draft_generated_by",
+      "schema": "public",
+      "values": [
+        "AI",
+        "USER"
+      ]
+    },
+    "public.draft_status": {
+      "name": "draft_status",
+      "schema": "public",
+      "values": [
+        "GENERATING",
+        "READY",
+        "IN_REVIEW",
+        "APPROVED",
+        "SENT",
+        "FAILED"
+      ]
+    },
+    "public.draft_type": {
+      "name": "draft_type",
+      "schema": "public",
+      "values": [
+        "AMENDMENT",
+        "EXTENSION_ADDENDUM",
+        "EARNEST_MONEY_DEMAND",
+        "LEASE_MODIFICATION",
+        "CLOSING_INSTRUCTION_LETTER",
+        "ENGAGEMENT_LETTER",
+        "STATUS_UPDATE",
+        "OTHER"
+      ]
+    },
+    "public.email_job_status": {
+      "name": "email_job_status",
+      "schema": "public",
+      "values": [
+        "QUEUED",
+        "SENT",
+        "FAILED"
+      ]
+    },
+    "public.invoice_status": {
+      "name": "invoice_status",
+      "schema": "public",
+      "values": [
+        "DRAFT",
+        "SENT",
+        "PAID"
+      ]
+    },
+    "public.lead_status": {
+      "name": "lead_status",
+      "schema": "public",
+      "values": [
+        "NEW",
+        "REVIEWED",
+        "CONVERTED",
+        "REJECTED",
+        "DUPLICATE"
+      ]
+    },
+    "public.message_direction": {
+      "name": "message_direction",
+      "schema": "public",
+      "values": [
+        "INBOUND",
+        "OUTBOUND"
+      ]
+    },
+    "public.message_role": {
+      "name": "message_role",
+      "schema": "public",
+      "values": [
+        "USER",
+        "ASSISTANT"
+      ]
+    },
+    "public.outcome_reason": {
+      "name": "outcome_reason",
+      "schema": "public",
+      "values": [
+        "CLOSED_ON_TIME",
+        "CLOSED_DELAYED",
+        "FINANCING_DENIED",
+        "INSPECTION_ISSUES",
+        "TITLE_DEFECT",
+        "APPRAISAL_GAP",
+        "BUYER_TERMINATED_OPTION",
+        "SELLER_TERMINATED",
+        "PARTIES_RENEGOTIATED_ELSEWHERE",
+        "OTHER"
+      ]
+    },
+    "public.party_role": {
+      "name": "party_role",
+      "schema": "public",
+      "values": [
+        "BUYER",
+        "SELLER",
+        "BUYERS_AGENT",
+        "SELLERS_AGENT",
+        "TITLE_COMPANY",
+        "LENDER",
+        "INSPECTOR",
+        "SURVEYOR",
+        "OPPOSING_COUNSEL",
+        "HOA",
+        "OTHER"
+      ]
+    },
+    "public.party_type": {
+      "name": "party_type",
+      "schema": "public",
+      "values": [
+        "PERSON",
+        "ORGANIZATION"
+      ]
+    },
+    "public.referral_source_type": {
+      "name": "referral_source_type",
+      "schema": "public",
+      "values": [
+        "REALTOR",
+        "PAST_CLIENT",
+        "ATTORNEY",
+        "LENDER",
+        "TITLE_COMPANY",
+        "WEB_SEARCH",
+        "WALK_IN",
+        "OTHER"
+      ]
+    },
+    "public.task_priority": {
+      "name": "task_priority",
+      "schema": "public",
+      "values": [
+        "NORMAL",
+        "HIGH"
+      ]
+    },
+    "public.task_status": {
+      "name": "task_status",
+      "schema": "public",
+      "values": [
+        "OPEN",
+        "IN_PROGRESS",
+        "COMPLETED",
+        "CANCELLED"
+      ]
+    },
+    "public.time_entry_source": {
+      "name": "time_entry_source",
+      "schema": "public",
+      "values": [
+        "MANUAL",
+        "SUGGESTED"
+      ]
+    },
+    "public.time_entry_status": {
+      "name": "time_entry_status",
+      "schema": "public",
+      "values": [
+        "DRAFT",
+        "CONFIRMED"
+      ]
+    },
+    "public.transaction_status": {
+      "name": "transaction_status",
+      "schema": "public",
+      "values": [
+        "INTAKE",
+        "UNDER_CONTRACT",
+        "DUE_DILIGENCE",
+        "TITLE_REVIEW",
+        "CLOSING_PREP",
+        "CLOSED",
+        "FALLEN_THROUGH"
+      ]
+    },
+    "public.transaction_type": {
+      "name": "transaction_type",
+      "schema": "public",
+      "values": [
+        "PURCHASE",
+        "SALE",
+        "REFINANCE",
+        "LEASE",
+        "COMMERCIAL"
+      ]
+    },
+    "public.user_role": {
+      "name": "user_role",
+      "schema": "public",
+      "values": [
+        "OWNER",
+        "ATTORNEY",
+        "PARALEGAL",
+        "CLIENT"
+      ]
+    },
+    "public.wire_verification_method": {
+      "name": "wire_verification_method",
+      "schema": "public",
+      "values": [
+        "PHONE",
+        "IN_PERSON",
+        "SECURE_PORTAL"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
