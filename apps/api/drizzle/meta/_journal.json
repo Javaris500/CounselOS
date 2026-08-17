@@ -8,6 +8,20 @@
       "when": 1786773839640,
       "tag": "0000_fixed_stone_men",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786934877149,
+      "tag": "0001_narrow_millenium_guard",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786934878110,
+      "tag": "0002_manual_indexes",
+      "breakpoints": true
     }
   ]
 }

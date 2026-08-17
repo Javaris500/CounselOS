@@ -10,9 +10,40 @@ Copy the contents of the **Schema File** section directly into `src/database/sch
 
 **Rules:**
 - Never edit a table's column structure without a corresponding migration
-- Never add columns to this file without documenting the migration in `drizzle/migrations/`
+- Never add columns to this file without documenting the migration in `apps/api/drizzle/`
 - All column names in this file use `snake_case` — Drizzle maps to `camelCase` in TypeScript automatically
 - Phase 2 tables are documented at the bottom — do not add them to this file until Phase 2 begins
+
+### Every timestamp is `timestamptz` (decided 2026-08-16)
+
+The code blocks below write `timestamp(...)`. **The live file writes `timestamp(..., { withTimezone: true })` on all 89 timestamp columns, with no exceptions.**
+
+`timestamp` stores a wall-clock reading with no anchor — its meaning depends on every writer agreeing forever on which zone was meant, and nothing in the database enforces that agreement. `timestamptz` stores a real instant: Postgres converts to UTC on write and back to the session zone on read.
+
+In a product whose core feature is Texas business-day deadline math, that is not a style preference. With `timestamp`, a deadline written by the worker on Railway (UTC) and one written from an attorney's browser (Central) are stored as *different instants that look identical*, and the option-fee vs earnest-money weekend divergence computes off by a day near midnight. Changed while every table was empty; converting later is a full table rewrite plus a judgment call about what the already-stored values were supposed to mean.
+
+`migrations.repository.spec.ts` asserts zero zone-less timestamp columns exist.
+
+### One exception: `holidays.date` is a Postgres `date` (decided 2026-08-16)
+
+A holiday is a calendar date, not an instant. Thanksgiving is not "a moment in UTC" — it is the 27th, all day, everywhere in Texas. As `timestamptz` the TREC engine would have to pick a time of day and then ask "is this instant before midnight in whichever zone the session is set to?", which flips near midnight and across DST. That is how an option-fee deadline lands on the wrong side of a holiday weekend.
+
+Declared `date('date', { mode: 'string' })` — **not** `mode: 'date'`, which would hand back a JS Date and reintroduce the ambiguity the column exists to remove. As `'YYYY-MM-DD'` the value has exactly one meaning.
+
+**This change required a driver fix, and the reason is worth knowing.** postgres.js parses OID 1082 into a JS Date at UTC midnight. Verified: `'2026-11-26'` arrives as `Wed Nov 25 2026 18:00:00 GMT-0600`, so `.getDate()` from a Central-time process returns **25**. Drizzle's `mode: 'string'` covers queries that go through Drizzle; it does nothing for `db.execute(sql\`...\`)`, the seed script, or hand-written SQL. `PG_CLIENT_OPTIONS` in `database.module.ts` now overrides the type parser for every client in the codebase. **Build clients from `PG_CLIENT_OPTIONS`; do not hand-roll one.**
+
+`holidays` also gets a unique index on `(date, jurisdiction)` in migration 0002 — the engine treats "is this date a holiday?" as a yes/no, and a duplicated seed row would let a roll rule count the same day twice.
+
+**Still open — the other pure dates.** `transactions.closing_date`, `effective_date`, and `option_period_expiry` are arguably calendar dates too. They stay `timestamptz` because they are attorney-entered and read back in one firm timezone, so the ambiguity is contained — unlike `holidays.date`, which the engine reads on every calculation. Revisit if the TREC engine ends up doing zone gymnastics to compare them.
+
+---
+
+**Two further mechanical differences between this doc and the live file, applying to every table below.** The live file is correct; this doc keeps the original form for readability.
+
+1. **`$onUpdate(() => sql\`now()\`)`, not `$onUpdate(() => new Date())`.** ESLint bans argument-less `new Date()` outside the clock seam (`packages/config/eslint/nest.js`) so that deadline urgency and TREC date math stay testable at a pinned time. Letting Postgres own `updated_at` also removes app/DB clock skew.
+2. **Table extra-config returns an array, not an object** — `(table) => [index(...)]`. The object form shown below is deprecated in drizzle-orm 0.45.
+
+Enums below are written as inline arrays for readability. **The live file derives every one from `@counselos/shared`** (`pgEnum('user_role', USER_ROLES)`), which is what keeps the Postgres type, the API's validation, and the frontend's dropdown the same list by construction.
 
 ---
 
@@ -29,18 +60,24 @@ For pgvector support — no separate package needed. The `vector` custom type de
 
 ## Drizzle Config (`drizzle.config.ts`)
 
-```typescript
-import type { Config } from 'drizzle-kit'
+The live file is `apps/api/drizzle.config.ts`. Migrations are written to `apps/api/drizzle/`, **not** `drizzle/migrations/`.
 
-export default {
+```typescript
+import { defineConfig } from 'drizzle-kit';
+
+export default defineConfig({
   schema: './src/database/schema.ts',
-  out: './drizzle/migrations',
-  driver: 'pg',
+  out: './drizzle',
+  dialect: 'postgresql',
   dbCredentials: {
-    connectionString: process.env.DATABASE_URL!,
+    url: process.env.DATABASE_URL!,
   },
-} satisfies Config
+  verbose: true,
+  strict: true,
+});
 ```
+
+> An earlier version of this block used `driver: 'pg'` and `connectionString`, which drizzle-kit replaced with `dialect` and `url`. Read the file, not this snippet.
 
 ---
 
@@ -56,13 +93,18 @@ export default {
 //   → documents → document_chunks
 //   → deadlines → chat_sessions → chat_messages
 //   → drafts → draft_versions
-//   → leads → client_access_tokens → transaction_activities
+//   → leads → transaction_activities
 //   → matter_notes → communications → document_checklist_items
-//   → tasks → time_entries → invoices
+//   → tasks → time_entries → invoices → client_access_tokens
+//   → holidays → verified_wire_instructions → wire_flag_events
+//   → matter_access → client_messages → access_log → email_jobs
+//
+// time_entries must follow transaction_activities (source_activity_id FK).
 //
 // Phase 2 tables NOT in this file:
-//   case_dna, arbitrage_predictions, case_outcomes,
-//   judges, opposing_counsel, carriers, time_entries, invoices, playbooks
+//   case_dna, arbitrage_predictions, case_outcomes, judges,
+//   opposing_counsel, carriers, playbooks, subscriptions,
+//   persistent_notifications
 
 import { relations, sql } from 'drizzle-orm'
 import {
@@ -280,6 +322,7 @@ export const communicationTypeEnum = pgEnum('communication_type', [
   'IN_PERSON',
   'TEXT',
   'VOICEMAIL',
+  'CLIENT_PORTAL', // written by the portal, not typed by a human — see clientMessages
   'OTHER',
 ])
 
@@ -427,6 +470,11 @@ export const users = pgTable('users', {
   barNumber:      text('bar_number'),        // attorneys only
 
   isActive:       boolean('is_active').notNull().default(true),
+
+  // CAN-SPAM (05 §9F): every notification send checks this before queuing.
+  // Set by GET /notifications/unsubscribe, which validates a signed HMAC token.
+  notificationOptedOut: boolean('notification_opted_out').notNull().default(false),
+
   lastSeenAt:     timestamp('last_seen_at'), // updated on each authenticated request
 
   // Legal compliance tracking
@@ -445,8 +493,10 @@ export const users = pgTable('users', {
 // Date fields use timestamp (not date) for consistency and timezone
 // handling. Application sets time to midnight local time for pure dates.
 //
-// client_user_id: FK to users is safe here (users defined above,
-// transactions defined now — no circular issue in this direction).
+// There is deliberately NO client_user_id. An earlier revision described one;
+// Phase 1 gives clients a signed HMAC token scoped to one transaction
+// (clientAccessTokens), not a user account, so there is no user row to point
+// at. Removed 2026-08-16.
 // ------------------------------------------------------------
 export const transactions = pgTable('transactions', {
   id:                   uuid('id').primaryKey().defaultRandom(),
@@ -628,8 +678,8 @@ export const documents = pgTable('documents', {
 
   createdAt:         timestamp('created_at').notNull().defaultNow(),
   updatedAt:         timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
-  // Soft delete — document record preserved, R2 file not deleted.
-  // Chunk records not deleted — data preserved for potential restore.
+  // Soft delete — document record preserved, the object in Supabase Storage is
+  // not deleted. Chunk records not deleted — data preserved for restore.
   deletedAt:         timestamp('deleted_at'),
 }, (table) => ({
   transactionStatusIdx: index('documents_transaction_id_processing_status_idx')
@@ -1350,9 +1400,11 @@ export const clientAccessTokens = pgTable('client_access_tokens', {
 // ------------------------------------------------------------
 export const holidays = pgTable('holidays', {
   id:           uuid('id').primaryKey().defaultRandom(),
-  date:         timestamp('date').notNull(),
   name:         text('name').notNull(),        // "Juneteenth", "Thanksgiving"
   jurisdiction: text('jurisdiction').notNull(), // FEDERAL | TX_STATE | COUNTY
+  // Postgres `date`, the ONE non-timestamptz temporal column in the schema.
+  // Reads and writes as 'YYYY-MM-DD' — no zone, no time. See the note above.
+  date:         date('date', { mode: 'string' }).notNull(),
   createdAt:    timestamp('created_at').notNull().defaultNow(),
 }, (table) => ({
   dateIdx: index('holidays_date_idx').on(table.date),
@@ -1506,6 +1558,42 @@ export const accessLog = pgTable('access_log', {
   txIdx:          index('access_log_transaction_id_idx').on(table.transactionId),
 }))
 
+// ------------------------------------------------------------
+// EMAIL JOBS
+// Audit trail for every notification email (05-backend-checklist.md §9D).
+// A row is written with status QUEUED before the job is enqueued, so an email
+// that vanishes is still evidenced. On send: SENT + resend_id + sent_at.
+// On retry exhaustion: FAILED + last_error.
+//
+// Surfaced by GET /notifications/email-log, OWNER only. Also the table
+// 09-legal-compliance.md's quarterly review reads for AI-feature failures.
+//
+// firm_id is not in the checklist's column list and is present deliberately:
+// every other table carries it, the OWNER log query scopes by it, and Phase 2
+// multi-tenancy requires it.
+// ------------------------------------------------------------
+export const emailJobs = pgTable('email_jobs', {
+  id:               uuid('id').primaryKey().defaultRandom(),
+  firmId:           uuid('firm_id').notNull().references(() => firms.id),
+  recipientUserId:  uuid('recipient_user_id').references(() => users.id),
+
+  status:           emailJobStatusEnum('status').notNull().default('QUEUED'),
+
+  notificationType: text('notification_type').notNull(), // NotificationType constant
+  recipientEmail:   text('recipient_email').notNull(),
+  subject:          text('subject').notNull(),           // stored for audit
+  resendId:         text('resend_id'),                   // Resend message ID, set on success
+  lastError:        text('last_error'),                  // set when retries are exhausted
+
+  attempts:         integer('attempts').notNull().default(0),
+
+  sentAt:           timestamp('sent_at'),
+
+  createdAt:        timestamp('created_at').notNull().defaultNow(),
+}, (table) => [
+  index('email_jobs_firm_id_created_at_idx').on(table.firmId, table.createdAt),
+])
+
 // ============================================================
 // RELATIONS
 // Drizzle relations — for type-safe .with() join syntax.
@@ -1528,14 +1616,16 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   approvedDrafts:          many(drafts, { relationName: 'approved_by' }),
   createdDrafts:           many(drafts, { relationName: 'created_by' }),
   uploadedDocuments:       many(documents),
-  persistentNotifications: many(persistentNotifications),
+  emailJobs:               many(emailJobs),
 }))
 
 export const transactionsRelations = relations(transactions, ({ one, many }) => ({
   firm:              one(firms, { fields: [transactions.firmId], references: [firms.id] }),
   assignedAttorney:  one(users, { fields: [transactions.assignedAttorneyId], references: [users.id], relationName: 'assigned_attorney' }),
   assignedParalegal: one(users, { fields: [transactions.assignedParalegalId], references: [users.id], relationName: 'assigned_paralegal' }),
-  clientUser:        one(users, { fields: [transactions.clientUserId], references: [users.id] }),
+  // No clientUser relation: there is no transactions.client_user_id column.
+  // Client access in Phase 1 is a signed HMAC token (clientAccessTokens), not a
+  // user account, so there is nothing to relate to.
   parties:           many(parties),
   documents:         many(documents),
   deadlines:         many(deadlines),
@@ -1612,9 +1702,14 @@ export const leadsRelations = relations(leads, ({ one }) => ({
   duplicateOf:          one(leads, { fields: [leads.duplicateOfId], references: [leads.id] }),
 }))
 
-export const persistentNotificationsRelations = relations(persistentNotifications, ({ one }) => ({
-  user: one(users, { fields: [persistentNotifications.userId], references: [users.id] }),
-  firm: one(firms, { fields: [persistentNotifications.firmId], references: [firms.id] }),
+// No persistentNotificationsRelations: there is no persistent_notifications
+// table in Phase 1. 05-backend-checklist.md §9H states it twice — the deadline
+// dashboard IS the notification center, and it is accurate regardless of
+// whether email or SSE delivered. Revisit in Phase 2 (05 §9H `[PHASE 2]`).
+
+export const emailJobsRelations = relations(emailJobs, ({ one }) => ({
+  firm:          one(firms, { fields: [emailJobs.firmId], references: [firms.id] }),
+  recipientUser: one(users, { fields: [emailJobs.recipientUserId], references: [users.id] }),
 }))
 
 export const transactionActivitiesRelations = relations(transactionActivities, ({ one }) => ({
@@ -1748,20 +1843,68 @@ export type NewLead                  = typeof leads.$inferInsert
 export type EmailJob                 = typeof emailJobs.$inferSelect
 export type NewEmailJob              = typeof emailJobs.$inferInsert
 
-export type PersistentNotification   = typeof persistentNotifications.$inferSelect
-export type NewPersistentNotification = typeof persistentNotifications.$inferInsert
-
 export type TransactionActivity      = typeof transactionActivities.$inferSelect
 export type NewTransactionActivity   = typeof transactionActivities.$inferInsert
+
+export type MatterNote                  = typeof matterNotes.$inferSelect
+export type NewMatterNote               = typeof matterNotes.$inferInsert
+
+export type Communication               = typeof communications.$inferSelect
+export type NewCommunication            = typeof communications.$inferInsert
+
+export type DocumentChecklistItem       = typeof documentChecklistItems.$inferSelect
+export type NewDocumentChecklistItem    = typeof documentChecklistItems.$inferInsert
+
+export type Task                        = typeof tasks.$inferSelect
+export type NewTask                     = typeof tasks.$inferInsert
+
+export type TimeEntry                   = typeof timeEntries.$inferSelect
+export type NewTimeEntry                = typeof timeEntries.$inferInsert
+
+export type Invoice                     = typeof invoices.$inferSelect
+export type NewInvoice                  = typeof invoices.$inferInsert
+
+export type ClientAccessToken           = typeof clientAccessTokens.$inferSelect
+export type NewClientAccessToken        = typeof clientAccessTokens.$inferInsert
+
+export type Holiday                     = typeof holidays.$inferSelect
+export type NewHoliday                  = typeof holidays.$inferInsert
+
+export type VerifiedWireInstruction     = typeof verifiedWireInstructions.$inferSelect
+export type NewVerifiedWireInstruction  = typeof verifiedWireInstructions.$inferInsert
+
+export type WireFlagEvent               = typeof wireFlagEvents.$inferSelect
+export type NewWireFlagEvent            = typeof wireFlagEvents.$inferInsert
+
+export type MatterAccess                = typeof matterAccess.$inferSelect
+export type NewMatterAccess             = typeof matterAccess.$inferInsert
+
+export type ClientMessage               = typeof clientMessages.$inferSelect
+export type NewClientMessage            = typeof clientMessages.$inferInsert
+
+export type AccessLog                   = typeof accessLog.$inferSelect
+export type NewAccessLog                = typeof accessLog.$inferInsert
 ```
 
 ---
 
 ## Migration Notes
 
-These indexes and constraints **cannot be generated by `drizzle-kit`**. They must be added as raw SQL in a manual migration file after the initial schema migration runs.
+These indexes and constraints **cannot be generated by `drizzle-kit`**. They live in `apps/api/drizzle/0002_manual_indexes.sql`.
 
-Create `drizzle/migrations/0002_manual_indexes.sql`:
+**Create it with `pnpm exec drizzle-kit generate --custom --name manual_indexes`, never by hand.** The migrator applies only what is registered in `drizzle/meta/_journal.json`; a `.sql` file dropped into the folder is silently skipped, and the indexes it contains never exist in any environment — which surfaces months later as "why is document chat slow in production?"
+
+The migration order that shipped:
+
+| Migration | Contents |
+|---|---|
+| `0000_fixed_stone_men` | 28 enum types only |
+| `0001_narrow_millenium_guard` | All 27 tables, 375 columns, 76 FKs, 33 indexes, plus `ALTER TYPE communication_type ADD VALUE 'CLIENT_PORTAL'` |
+| `0002_manual_indexes` | Everything below — 12 indexes and 3 generated columns |
+
+Verified against a real Postgres 16 + pgvector container: `apps/api/src/database/migrations.repository.spec.ts` (migrations applied correctly) and `schema-alignment.repository.spec.ts` (the live database matches `schema.ts`, and `schema.ts` matches `@counselos/shared`). Run both with `pnpm --filter @counselos/api test:int`.
+
+What actually shipped in 0002 differs from the draft below in two places: `users.auth_id` gets no partial index (the column-level `.unique()` already permits multiple NULLs, so it is equivalent), and two unique indexes were added that this doc states as invariants in comments but never enforced: one ACTIVE wire baseline per party per transaction, and one holiday per (date, jurisdiction).
 
 ```sql
 -- ============================================================
@@ -1864,10 +2007,11 @@ The following tables will be added in Phase 2 migrations when expanding to PI fi
 - `carriers` — global behavioral fingerprints
 
 **SaaS operational tables:**
-- `time_entries` — billable time tracking with AI suggestions
-- `invoices` and `invoice_line_items` — client billing
 - `playbooks` and `playbook_steps` — firm workflow templates
 - `subscriptions` — Stripe subscription tracking
+- `persistent_notifications` — in-app notification records. Phase 1 has none: the deadline dashboard IS the notification center and is accurate regardless of email or SSE delivery (05 §9H).
+
+> `time_entries` and `invoices` were listed here in an earlier revision. They are **Phase 1 tables** and are defined above — time capture and invoicing ship in Phase 1 per `13-adoption-features.md`. Corrected 2026-08-16.
 
 **Multi-tenancy additions to existing tables:**
 - RLS policies enabled on all tables (currently written but not enforced)
@@ -1942,47 +2086,7 @@ const results = await db
 
 ---
 
-*15 tables. 2 circular FK exceptions documented. All enums Postgres-level enforced.
-Partial indexes in separate migration. HNSW index in separate migration.
-Phase 2 tables documented but not included.*
-
-
-export type MatterNote                  = typeof matterNotes.$inferSelect
-export type NewMatterNote               = typeof matterNotes.$inferInsert
-
-export type Communication               = typeof communications.$inferSelect
-export type NewCommunication            = typeof communications.$inferInsert
-
-export type DocumentChecklistItem       = typeof documentChecklistItems.$inferSelect
-export type NewDocumentChecklistItem    = typeof documentChecklistItems.$inferInsert
-
-export type Task                        = typeof tasks.$inferSelect
-export type NewTask                     = typeof tasks.$inferInsert
-
-export type TimeEntry                   = typeof timeEntries.$inferSelect
-export type NewTimeEntry                = typeof timeEntries.$inferInsert
-
-export type Invoice                     = typeof invoices.$inferSelect
-export type NewInvoice                  = typeof invoices.$inferInsert
-
-export type ClientAccessToken           = typeof clientAccessTokens.$inferSelect
-export type NewClientAccessToken        = typeof clientAccessTokens.$inferInsert
-
-
-export type Holiday                      = typeof holidays.$inferSelect
-export type NewHoliday                   = typeof holidays.$inferInsert
-
-export type VerifiedWireInstruction      = typeof verifiedWireInstructions.$inferSelect
-export type NewVerifiedWireInstruction   = typeof verifiedWireInstructions.$inferInsert
-
-export type WireFlagEvent                = typeof wireFlagEvents.$inferSelect
-export type NewWireFlagEvent             = typeof wireFlagEvents.$inferInsert
-
-export type MatterAccess        = typeof matterAccess.$inferSelect
-export type NewMatterAccess     = typeof matterAccess.$inferInsert
-
-export type ClientMessage       = typeof clientMessages.$inferSelect
-export type NewClientMessage    = typeof clientMessages.$inferInsert
-
-export type AccessLog     = typeof accessLog.$inferSelect
-export type NewAccessLog  = typeof accessLog.$inferInsert
+*27 tables. 2 circular FK exceptions documented (users.transaction_id,
+drafts.current_version_id). All enums Postgres-level enforced and sourced from
+@counselos/shared. HNSW, partial-unique, tsvector, and partial list indexes in
+migration 0002. Phase 2 tables documented but not included.*

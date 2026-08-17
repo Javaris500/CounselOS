@@ -4,6 +4,12 @@ export const COMMUNICATION_TYPES = [
   'IN_PERSON',
   'TEXT',
   'VOICEMAIL',
+  // Written by the client portal, not typed by a human: every client message
+  // also lands in the communication log so two-way messaging feeds
+  // institutional memory and AI chat context (13-adoption-features.md,
+  // 05 §8J). Added ahead of the module that needs it — 03-schema.md omitted
+  // the value while two other docs already required it.
+  'CLIENT_PORTAL',
   'OTHER',
 ] as const;
 export type CommunicationType = (typeof COMMUNICATION_TYPES)[number];
