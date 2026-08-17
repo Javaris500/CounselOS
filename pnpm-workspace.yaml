@@ -12,6 +12,9 @@ catalog:
   # --- runtime: backend ---
   '@eslint/js': ^10.0.1
   '@faker-js/faker': ^10.1.0
+  # Bridges the canonical Zod schemas in packages/shared into react-hook-form,
+  # so one schema validates on both sides (06 Part 11 / the Form primitive).
+  '@hookform/resolvers': ^5.9.0
   '@nestjs/bullmq': ^11.0.5
 
   # --- tooling ---
@@ -53,6 +56,9 @@ catalog:
 
   # --- testing ---
   jest: ^30.4.2
+  # Network-layer mocking. Intercepts below apiFetch so the real auth lifecycle
+  # runs in tests — see 06 Part 14.
+  msw: ^2.15.0
   nestjs-cls: ^6.2.1
   nestjs-zod: ^5.5.0
 
@@ -63,6 +69,7 @@ catalog:
   prettier: ^3.9.6
   react: ^19.2.8
   react-dom: ^19.2.8
+  react-hook-form: ^7.85.0
   reflect-metadata: ^0.2.2
   rxjs: ^7.8.2
   supertest: ^7.2.2
@@ -84,7 +91,9 @@ catalog:
 #   esbuild        — bundler binary behind tsx and drizzle-kit
 #   unrs-resolver  — native module resolver used by eslint
 # @scarf/scarf is deliberately absent: it's analytics, and nothing breaks
-# without it.
+# without it. msw is deliberately absent too — its postinstall only prints
+# guidance about `msw init`; it compiles nothing, and the worker file is placed
+# explicitly by that command instead.
 onlyBuiltDependencies:
   - esbuild
   - unrs-resolver

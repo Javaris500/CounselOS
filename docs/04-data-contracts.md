@@ -9,31 +9,35 @@ Every data decision in CounselOS is made against one rule: **does this field ear
 
 The second rule: **firm_id is on every table.** Phase 1 it is hardcoded from env config. Phase 2 it is enforced by RLS at the database level. Either way it is present from day one so the schema never changes when we add multi-tenancy.
 
-The third rule: **schema first, code second.** `schema.prisma` is reviewed and agreed before any module is written. A change to the schema is more impactful than most code changes and goes through the same review process.
+The third rule: **schema first, code second.** `apps/api/src/database/schema.ts` is reviewed and agreed before any module is written. A change to the schema is more impactful than most code changes and goes through the same review process.
 
 ---
 
-## Prisma Schema Principles
+## Schema Principles
 
-Applied before writing any model. Non-negotiable.
+Applied before writing any table. Non-negotiable. The ORM is **Drizzle**; `schema.ts` is the single source of truth for data shape, and entity types are inferred from it (`typeof transactions.$inferSelect`), never hand-written.
 
-**UUIDs everywhere** — `@id @default(uuid())`. Never auto-increment integers. UUIDs are safe to expose in URLs, do not leak record counts, and are globally unique across tables.
+**UUIDs everywhere** — `uuid('id').primaryKey().defaultRandom()`. Never auto-increment integers. UUIDs are safe to expose in URLs, do not leak record counts, and are globally unique across tables.
 
-**Timestamps on every model** — `created_at DateTime @default(now())` and `updated_at DateTime @updatedAt`. No exceptions. You will need these for debugging, auditing, and data exports.
+**Timestamps on every table** — `created_at` on all 27, `updated_at` wherever rows are mutable. Append-only tables (activity, access log, chat messages, draft versions) deliberately have no `updated_at`: a fact is not editable.
 
-**Soft delete on legal entities** — `deleted_at DateTime?` nullable timestamp on Transaction, Document, Deadline, Draft, Party. Never hard delete. All queries add `WHERE deleted_at IS NULL` via Prisma middleware. Records can be restored. History is preserved.
+**Every timestamp is `timestamptz`** — one exception, `holidays.date`, which is a Postgres `date`. A `timestamp` stores no zone, so a value written by the worker (UTC) and one written from a browser (Central) are different instants that look identical. A holiday is the opposite case: a calendar date, not an instant.
 
-**Enums in schema.prisma** — every enum used in the database is a Prisma enum, not just a TypeScript enum. Postgres enforces valid values at the DB level.
+**Soft delete on legal entities** — `deleted_at` on the 13 tables that carry it. Never hard delete. Drizzle has **no middleware**, so the filter is not automatic: repositories extend a base whose list methods apply the `notDeleted` helper, and a hand-written `where` on a list query is a review item.
 
-**Explicit cascade rules** — every `@relation` has a documented `onDelete` behavior. Delete transaction → cascade delete documents, deadlines, chat sessions, drafts, parties, activity log. Delete document → cascade delete chunks. Delete user → restrict if they own transactions (soft-deactivate instead). Delete firm → restrict entirely (Phase 2).
+**Uniqueness must be partial** — because rows are soft-deleted, a plain `UNIQUE` would burn `RE-2025-0042` forever once deleted. Uniqueness is scoped `WHERE deleted_at IS NULL` in a hand-written migration.
+
+**Enums are Postgres enums, sourced from `packages/shared`** — `pgEnum('user_role', USER_ROLES)`. The value array lives in shared and both apps import it, so the Postgres type, the API's validation, and the frontend's dropdown are the same list by construction.
+
+**Explicit cascade rules** — every `.references()` documents its `onDelete`. Delete transaction → cascade documents, deadlines, chat sessions, drafts, parties, activity. Delete document → cascade chunks. `access_log` deliberately does **not** cascade: an audit trail that deletes itself along with its subject is not an audit trail. Users are never deleted, only deactivated.
 
 **JSONB only for stored blobs** — if you filter or sort by a field, it is a proper column. If it is just stored and returned, it can be JSONB. Firm settings: JSONB. Activity log metadata: JSONB. Transaction status: column. Deadline urgency: column.
 
 **Never store computed values unless performance demands it** — `urgency` on Deadline is an exception because the scheduler updates it hourly. Everything else computed on read.
 
-**Index what you query** — `firm_id` (all tables), `status` (transactions, deadlines), `closing_date` (transactions), `assigned_attorney_id` (transactions), `transaction_id` (documents, deadlines, chunks, activity_logs), `auth_id` (users — every JWT lookup hits this).
+**Index what you query** — `firm_id` (every table but three), `status` (transactions, deadlines), `closing_date` (transactions), `assigned_attorney_id` (transactions), `transaction_id` (documents, deadlines, chunks, activities), `auth_id` (users — every JWT lookup hits this).
 
-**Migrations are immutable** — once run in production, never edit. Corrections go in a new migration. Named with date prefix: `20250619_add_effective_date_to_transactions`.
+**Migrations are immutable** — once run, never edit. Corrections go in a new migration. `drizzle-kit` generates and names them sequentially (`0001_narrow_millenium_guard.sql`); the HNSW index, partial-unique indexes, and tsvector generated columns are hand-written, created with `drizzle-kit generate --custom` so they register in `meta/_journal.json`. A `.sql` file dropped into the folder by hand is silently skipped.
 
 ---
 
@@ -63,7 +67,7 @@ Every single endpoint returns the same shape. No exceptions.
 }
 ```
 
-The frontend never parses `message`. It always switches on `code`. Error codes are typed constants in `src/common/errors/error-codes.ts`. Changing the message never breaks the frontend. Changing a code is a breaking change and requires frontend coordination.
+The frontend never parses `message`. It always switches on `code`. Error codes are typed constants in `packages/shared/src/errors/error-codes.ts`, imported by both apps so they cannot drift. Changing the message never breaks the frontend. Changing a code is a breaking change and requires frontend coordination.
 
 ---
 
@@ -75,7 +79,7 @@ The frontend never parses `message`. It always switches on `code`. Error codes a
 
 **Validation errors** — Zod schema rejection on request body. Zod validation pipe catches before controller runs. Returns 422 with field-level details. Never reaches service layer. Logged at DEBUG level.
 
-**Unexpected errors** — DB connection lost, R2 unavailable, uncaught exception. Global filter catches anything that is not an `AppException` or `ZodError`. Returns 500 with `INTERNAL_ERROR` code and zero internal details leaked to client. Full error + stack trace sent to Sentry with correlation ID. Logged at ERROR level.
+**Unexpected errors** — DB connection lost, storage unavailable, uncaught exception. Global filter catches anything that is not an `AppException` or `ZodError`. Returns 500 with `INTERNAL_ERROR` code and zero internal details leaked to client. Full error + stack trace sent to Sentry with correlation ID. Logged at ERROR level.
 
 **What never happens:**
 - Raw `HttpException` thrown from service code
@@ -107,19 +111,20 @@ No `address`, no `website`, no `founded_year`. None drive any feature.
 
 ### User
 
-One record per human. Attorneys, paralegals, owners, and clients all live here. Role determines what they can see and do.
+One record per firm member — attorneys, paralegals, owners. Role determines what they can see and do.
 
-**Why clients live in the User table:** The client portal authenticates through Supabase Auth. That means clients need a Supabase Auth UID. That UID maps to a User record. Putting clients in a separate table means two auth systems. One table, one auth flow, role gates the rest.
+**Clients are NOT users in Phase 1.** No client accounts, no passwords, no Supabase Auth record. A client gets a signed HMAC URL granting read-only access to one transaction for 30 days (`client_access_tokens`, which stores only the SHA-256 of the token). The `CLIENT` role exists in the enum for Phase 2 but nothing issues it today. Two consequences worth stating plainly: there is no `transactions.client_user_id`, and any client-portal access failure returns **404**, never 401/403 — revealing that a transaction exists is itself a disclosure.
 
 **Fields that earn their place:**
-- `role` — the most important field on this table. Everything downstream branches on this. OWNER and ATTORNEY can do anything within the firm. PARALEGAL cannot approve drafts or log outcomes. CLIENT can only see their own case in the portal.
+- `role` — the most important field on this table. Everything downstream branches on this. OWNER and ATTORNEY can do anything within the firm. PARALEGAL cannot approve drafts or log outcomes.
 - `barNumber` — attorneys only. Required for conflict screening — if two firms share an attorney who switches firms, this is how we detect it.
-- `billingRate` — overrides the firm default. Different attorneys bill at different rates. This field exists because time entries multiply duration by rate — we need rate at the user level.
-- `isActive` — soft-deactivate users without deleting them. A deactivated attorney's cases remain. Their data remains. Their access is revoked.
-- `lastSeenAt` — updated on each authenticated request. Used for the billing suggestion engine — we only suggest time entries for attorneys who were recently active.
+- `isActive` — soft-deactivate users without deleting them. A deactivated attorney's cases remain. Their data remains. Their access is revoked. There is no `deleted_at` on this table for exactly this reason: every historical FK pointing at a user must still resolve.
+- `notificationOptedOut` — CAN-SPAM. Every notification send checks it before queuing; the unsubscribe endpoint sets it from a signed token.
+- `lastSeenAt` — updated on each authenticated request. Used by the passive time-capture engine — we only suggest entries for attorneys who were recently active.
+- `aiPolicyAcknowledgedAt` — set when the attorney first acknowledges the firm's AI use policy. Part of the Opinion 705 record.
 
 **Fields we do NOT have:**
-No `address`, no `bio`, no `linkedinUrl`, no `specialties` array. Not needed for any feature we build.
+No `address`, no `bio`, no `linkedinUrl`, no `specialties` array. No `billingRate` — the firm default lives in `firms.settings`, and the rate that matters is the one **snapshotted onto the time entry** at creation, so historical billing never moves when a rate changes.
 
 ---
 
@@ -171,7 +176,7 @@ Files uploaded to a transaction. The input to the entire intelligence pipeline. 
 
 **Fields that earn their place:**
 - `type` — the document classifier sets this if not provided by the uploader. It drives downstream routing. A PURCHASE_AGREEMENT triggers deadline extraction. An AMENDMENT triggers the superseding deadline check. A TITLE_COMMITMENT flags attorney review needed. Without type, the pipeline cannot route correctly.
-- `storage_key` — the R2 object key, not a URL. Signed URLs generated on demand with 15-minute expiry. Storing a permanent URL to a legal document is a security vulnerability — anyone with the URL can access it indefinitely.
+- `storage_key` — the Supabase Storage object key, not a URL. Signed URLs generated on demand with 15-minute expiry. Storing a permanent URL to a legal document is a security vulnerability — anyone with the URL can access it indefinitely.
 - `processing_status` — the pipeline is async. Upload returns immediately with a document ID. The attorney's browser listens on SSE for status transitions: PENDING → PROCESSING → EXTRACTING → EMBEDDING → READY. Without this field there is no way to show accurate progress.
 - `processing_error` — when a document fails, the attorney needs to know why. "No extractable text found — document may be a scanned image" is actionable. A silent failure with no message is not.
 - `is_client_visible` — explicit flag, default false. Documents are internal by default. The attorney makes a deliberate decision to share a document with the client. A title commitment might be shared. Internal notes correspondence never is. Never automatic.
@@ -328,15 +333,19 @@ AI-generated documents awaiting attorney review.
 
 ---
 
-### `[PHASE 2]` TimeEntry and Invoice
+### TimeEntry and Invoice
 
-The billing layer. Not built in Phase 1 — close the client first. Documented here because the schema needs to be designed upfront so Phase 2 can add it without touching existing tables.
+The billing layer. **Phase 1** — both tables ship in the first migration, and slice 7 builds the UI.
 
 **Why `billing_rate` is stored on TimeEntry rather than derived from User:**
 Rates change over time. A time entry logged in January at $350/hour must not retroactively change if the attorney's rate updates in March. Rate is snapshotted at entry creation. Historical billing records are immutable facts.
 
-**Why `stripe_payment_link_url` lives on Invoice:**
-Generated once when the invoice is sent. Stored so the client portal can render the payment button without a Stripe API call on every page load.
+**Why `line_items` on Invoice is a JSONB snapshot, not FKs to TimeEntry:**
+An invoice is a historical record. Time entries may be edited, corrected, or soft-deleted afterward; the invoice must not move. Reprinting a 2024 invoice has to produce the 2024 invoice.
+
+**Passive capture:** `source` distinguishes MANUAL from SUGGESTED, and `entry_status` DRAFT from CONFIRMED. A DRAFT entry never appears on an invoice and is purged after 14 days if the attorney never confirms it. Nothing bills without a human confirming it.
+
+**No Stripe fields in Phase 1.** The attorney downloads the invoice PDF and emails it. `stripe_payment_link_url` is a `[PHASE 2]` addition, arriving with subscriptions.
 
 ---
 
@@ -395,35 +404,38 @@ Global tables (not firm-scoped, shared intelligence)
 
 ## What We Deliberately Left Out
 
-**No notification table.** Notifications are transient. They fire via SSE and Resend. If an attorney misses a deadline alert, the deadline record itself is the source of truth. `alerts_sent_at` on the Deadline entity tracks what was sent. A separate notifications table that grows forever with no application query pattern is waste.
-
-**No audit_log table.** TransactionActivity handles transaction-level audit. The global audit interceptor writes structured logs to Sentry. A separate DB table for every API write would balloon in size and is never queried by the application.
+**No persistent notifications table.** In-app notification records are transient by nature. Alerts fire via SSE and Resend, and the **deadline dashboard is the notification center** — it is accurate regardless of whether either channel delivered. `alerts_sent_at` on Deadline tracks what was sent. `email_jobs` is a different thing and does exist: it is the send-side audit trail (queued → sent → failed, with the Resend message ID), not a notification feed.
 
 **No tags table.** Tags on transactions are a string array column. Real estate attorneys tag with simple labels like `['cash_purchase', 'estate_sale']`. A normalized tags table for this is over-engineering.
 
-**No client messaging table in Phase 1.** The client status page is read-only. Clients contact the attorney directly. Secure messaging is Phase 2.
+**No notification preferences table.** Firm settings JSONB holds the firm-level toggles; per-user opt-out is a single boolean on User. Anything finer-grained is `[PHASE 2]`.
 
-**No notification preferences table.** Firm settings JSONB contains all alert preferences. One field, one query.
+**Two things this section used to list that DO exist:**
 
-**No `[PHASE 2]` tables in Phase 1 migrations.** CaseDNA, ArbitragePrediction, CaseOutcome, Judge, Carrier, OpposingCounsel are documented and designed but not included in Phase 1 Prisma schema. They are added in Phase 2 migrations. Phase 1 schema is lean — only what ships.
+- **`access_log`** — a read-access audit trail, distinct from `transaction_activities`, which logs *actions*. This logs *views*: who opened which matter and when. For a system holding privileged material, reads matter as much as writes — it is what proves matter-level access control works. Written from an interceptor, never from controllers. High volume; partition in Phase 2.
+- **`client_messages`** — the client portal is **two-way** in Phase 1 (slice 9). The client is authenticated by the same signed token that grants read access, so there is still no client account. The AI never auto-responds; an attorney composes every outbound reply. Every message also writes a `communications` row with type `CLIENT_PORTAL`, so portal traffic feeds institutional memory and AI chat context.
+
+**No `[PHASE 2]` tables in Phase 1 migrations.** CaseDNA, ArbitragePrediction, CaseOutcome, Judge, Carrier, OpposingCounsel are documented and designed but not included in the Phase 1 schema. They are added in Phase 2 migrations. Phase 1 schema is lean — only what ships.
 
 ---
 
 ## Data Fetching Strategy — Phase 1
+
+Client-side detail is owned by `06-frontend-architecture.md`; where the two disagree, 06 wins.
 
 **Category 1 — Static reference data. Fetch once, cache long.**
 Firm settings. Phase 1 has one firm so this barely matters, but the pattern is established for Phase 2.
 
 Server: Redis cache with 15-minute TTL on firm settings. Embedding vectors cached 7 days by content hash — never re-embed unchanged content.
 
-Client: SWR with `revalidateOnFocus: false`. Zustand stores it after first fetch.
+Client: SWR with `revalidateOnFocus: false`. **Server data lives in SWR and only SWR** — it is never copied into Zustand. The two Zustand stores hold ephemeral state only: the in-memory access token and the SSE connection/notification queue.
 
 **Category 2 — Session data. Fetch on navigation.**
 Transaction list, transaction detail, documents, deadlines, drafts, leads. Changes only when the user takes an action.
 
 Server: No cache. Always hits database. Queries are fast because indexes are tight and firm scope is always the first filter.
 
-Client: SWR, `revalidateOnFocus: false` globally. Optimistic updates on mutations — update local state immediately, revalidate in background, roll back on rejection.
+Client: SWR, `revalidateOnFocus: false` globally. **Optimistic updates are the exception, not the default** — they apply only to creates on a list the user is currently watching (communication, note, task, time entry), each with `rollbackOnError` and a failure toast. Status transitions, deadline confirms, draft approvals, and invoicing use a pending state and then revalidate: showing a legal state change that may not have happened is worse than showing a spinner.
 
 **Category 3 — Real-time data. Push, not pull.**
 Document processing status, deadline alerts, chat token stream, transaction activity feed. Must push the moment the server knows. Never poll.
