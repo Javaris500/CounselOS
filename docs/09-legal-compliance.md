@@ -97,7 +97,7 @@ The Texas Data Privacy and Security Act (TDPSA), effective July 2024, also appli
 
 ### What CounselOS Does — Vendor Chain
 
-Client data flows through three AI vendors in CounselOS:
+Client data flows through five external vendors in CounselOS. Two are AI vendors; the other three are equally subprocessors under Rule 1.05, because the rule turns on whether the vendor *receives* client confidences, not on whether it is intelligent.
 
 **Anthropic (Claude)** — receives chat messages, document content, and draft instructions. Every prompt that includes transaction party names, property addresses, or document excerpts is client data.
 
@@ -106,6 +106,10 @@ Client data flows through three AI vendors in CounselOS:
 **Resend** — receives attorney email addresses, client email addresses, and deadline information for notification emails.
 
 **Supabase** — stores all client data in PostgreSQL and object storage.
+
+**Sentry** — receives error reports from both processes: stack traces, the correlation ID, the user ID, the firm ID, and the role. It is configured never to send request bodies, cookies, emails, or names (`sendDefaultPii: false`, plus explicit scrubbing in `instrument.ts`).
+
+The exposure that matters here is **error messages**, not request payloads. A Postgres unique-violation quotes the conflicting value; a Zod validation error echoes the input that failed, and a chat message is up to 4,000 characters of client content; a not-found error can interpolate a party name or property address. `instrument.ts` scrubs message strings for this reason, but scrubbing is mitigation, not exemption — Sentry sees privileged material when something goes wrong, which is exactly when it is least predictable. Treat it as a subprocessor and paper it like one.
 
 ### What the Firm Must Do — Priority Order
 
@@ -117,7 +121,11 @@ Client data flows through three AI vendors in CounselOS:
 
 3. **Supabase DPA** — Supabase has a standard Data Processing Agreement available at supabase.com/privacy. Execute it. Confirm US East data residency is set on the project — all client data stays in the United States.
 
-4. **Document the vendor vetting** — write a one-page memo to the firm's file listing each vendor, the data they process, and the protections confirmed. Date it, sign it, keep it. This is your Rule 1.05 compliance record.
+4. **Resend DPA** — Resend publishes a standard DPA. Execute it. It covers attorney and client email addresses and the deadline content in notification emails.
+
+5. **Sentry DPA** — Sentry publishes a standard DPA at sentry.io/legal/dpa. Execute it, and set the organization's **data region to US** and its **event retention to the shortest term the plan allows**. Error reports are not a place to accumulate privileged material indefinitely. If the firm's own risk posture rules out sending error data to a third party at all, the alternative is self-hosting (Sentry OSS or GlitchTip on Railway) — this removes the subprocessor entirely at the cost of running it yourself, and is a decision for the firm rather than for engineering.
+
+6. **Document the vendor vetting** — write a one-page memo to the firm's file listing each vendor, the data they process, and the protections confirmed. Date it, sign it, keep it. This is your Rule 1.05 compliance record.
 
 **What to tell clients:**
 
@@ -235,6 +243,7 @@ Note: The CounselOS billing capture feature is Phase 2. For Phase 1, the firm tr
 - [ ] Voyage AI: data processing agreement executed — no model training on embedding requests
 - [ ] Supabase: Data Processing Agreement executed — US East data residency confirmed
 - [ ] Resend: Data Processing Agreement reviewed — client email addresses covered
+- [ ] Sentry: Data Processing Agreement executed — US data region set, event retention set to the shortest term the plan allows
 - [ ] Vendor vetting memo written, signed, dated, filed
 
 ### Technical Actions (CounselOS System)
@@ -263,7 +272,7 @@ The Texas State Bar Professional Ethics Committee may update Opinion 705 or issu
 Check whether the relevant district has AI disclosure requirements. Generate the disclosure text from CounselOS and add it to any AI-assisted filings.
 
 **Annual:**
-Review all vendor agreements for changes to data usage terms. Anthropic, Voyage AI, and Supabase update their privacy policies. Reverify that ZDR and no-training commitments remain in effect.
+Review all vendor agreements for changes to data usage terms. Anthropic, Voyage AI, Supabase, Resend, and Sentry all update their privacy policies. Reverify that ZDR and no-training commitments remain in effect, and that Sentry's data region and retention window have not been changed by a plan migration.
 
 ---
 
@@ -277,6 +286,7 @@ Review all vendor agreements for changes to data usage terms. Anthropic, Voyage 
 - Texas Data Privacy and Security Act (TDPSA): capitol.texas.gov → SB 2 (88th Legislature)
 - Anthropic Privacy Policy and ZDR: anthropic.com/privacy → API Data Usage
 - Supabase DPA: supabase.com/privacy → Data Processing Agreement
+- Sentry DPA: sentry.io/legal/dpa → also set data region and event retention in organization settings
 
 ---
 

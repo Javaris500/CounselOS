@@ -37,12 +37,14 @@ counselos/
 ```
 packages/shared/src/
 ├── enums/
-│   ├── transaction.enums.ts    # TransactionStatus, TransactionType
-│   ├── document.enums.ts       # DocumentType, ProcessingStatus
-│   ├── deadline.enums.ts       # DeadlineType, DeadlineStatus, Urgency
-│   ├── draft.enums.ts          # DraftType, DraftStatus
+│   ├── transaction.enums.ts    # TransactionType/Status, PartyRole/Type, OutcomeReason
+│   ├── document.enums.ts       # DocumentType, ProcessingStatus, ChecklistItemStatus
+│   ├── deadline.enums.ts       # DeadlineType, DeadlineStatus, Urgency + thresholds
+│   ├── draft.enums.ts          # DraftType, DraftStatus, DraftGeneratedBy
 │   ├── task.enums.ts           # TaskStatus, TaskPriority
-│   ├── communication.enums.ts  # CommunicationType, Direction
+│   ├── communication.enums.ts  # CommunicationType, Direction, MessageRole/Direction
+│   ├── lead.enums.ts           # LeadStatus, ReferralSourceType
+│   ├── business.enums.ts       # Invoice, TimeEntry, WireVerification, EmailJob
 │   └── user.enums.ts           # UserRole
 ├── errors/
 │   └── error-codes.ts          # ERROR_CODES — frontend switches on these
@@ -311,10 +313,14 @@ Shared test infrastructure sits at the app root:
 
 ```
 apps/api/test/
-├── setup.ts                         # testcontainers boot
+├── setup/
+│   ├── containers.ts                # jest globalSetup — boots Postgres + Redis, migrates
+│   └── teardown.ts                  # jest globalTeardown — stops them
 ├── factories/                       # buildTransaction(), buildUser(), ...
 └── fixtures/                        # the 5 Austin transactions, sample PDFs
 ```
+
+These two paths are referenced by `apps/api/jest.config.ts` and must match it exactly — a `globalSetup` pointing at a file that doesn't exist fails every integration and E2E run with a module-not-found, which reads as a broken test rather than a broken path.
 
 ---
 

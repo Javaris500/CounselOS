@@ -1,0 +1,16 @@
+{
+  "extends": "@counselos/config/tsconfig/nest.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    // rootDir lives in tsconfig.build.json, not here. This config also covers
+    // test/, which sits outside src/ — declaring rootDir at this level makes
+    // tsc reject every file under test/ with TS6059. The build config excludes
+    // test/ and is where constraining the output layout actually belongs.
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

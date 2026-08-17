@@ -45,7 +45,7 @@ You do not read all 19 docs. You read what your task needs. Here's the map:
 
 Install before you start:
 
-- **Node.js 20 LTS** (`.nvmrc` pins the exact version — run `nvm use`)
+- **Node.js 24 LTS** ("Krypton") — `.nvmrc` pins it, run `nvm use`. *Changed from Node 20, which reached end-of-life; 24 and 22 are the active LTS lines. `@types/node` tracks 24 deliberately rather than npm's `latest`, which follows Node current.*
 - **pnpm** (`npm i -g pnpm`) — we use pnpm workspaces, not npm
 - **Docker** — required, not optional. Testcontainers boots real Postgres and Redis for the integration and E2E tiers, so **every module's E2E gate needs it from Module 1 onward**. `docker-compose.yml` also gives you local dev services. On WSL2: install Docker Desktop on Windows, then enable **Settings → Resources → WSL Integration** for your distro, or `docker` won't resolve inside WSL.
 - **Git**

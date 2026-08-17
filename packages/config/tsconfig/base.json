@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "CounselOS Base",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "moduleDetection": "force",
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Strictness. All of it, deliberately.
+       noUncheckedIndexedAccess is the one people disable — don't. It's what
+       turns `rows[0].id` on an empty result into a compile error instead of a
+       production TypeError. */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+
+    /* Off deliberately: NestJS constructor-injected properties are assigned by
+       the DI container, and unused-parameter errors fight interface conformance
+       in guards and interceptors. ESLint covers both with more nuance. */
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+
+    /* incremental is deliberately OFF.
+       It writes .tsbuildinfo outside outDir, so `nest build`'s deleteOutDir
+       wipes dist while tsc still believes those files were emitted — and it
+       silently skips them. The symptom is a MODULE_NOT_FOUND at runtime for a
+       file that is plainly in src, which is a miserable thing to debug.
+       Turbo already caches build outputs, so this costs almost nothing. */
+    "incremental": false
+  },
+  "exclude": ["node_modules", "dist", ".next", "coverage"]
+}

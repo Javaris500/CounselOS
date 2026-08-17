@@ -1,0 +1,32 @@
+{
+  "name": "@counselos/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CounselOS frontend. Next.js App Router — two products, one deploy.",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test:e2e": "playwright test",
+    "clean": "rm -rf .next *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@counselos/shared": "workspace:*",
+    "next": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "swr": "catalog:",
+    "zustand": "catalog:"
+  },
+  "devDependencies": {
+    "@counselos/config": "workspace:*",
+    "@playwright/test": "catalog:",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
+  }
+}

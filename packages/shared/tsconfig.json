@@ -1,0 +1,22 @@
+{
+  "extends": "@counselos/config/tsconfig/base.json",
+  "compilerOptions": {
+    /* CommonJS output, deliberately.
+       apps/api must be CommonJS — NestJS's decorator metadata emit depends on
+       it — and CommonJS can't require() an ESM package. Next.js consumes
+       CommonJS without complaint, so one output format serves both and there's
+       no dual-build machinery to maintain. */
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+
+    /* No ambient types at all, deliberately. This package is consumed by a Node
+       backend AND bundled into the browser, so it must not reach for `process`,
+       `Buffer`, or the DOM. Empty `types` makes that a compile error instead of
+       a runtime surprise in whichever environment wasn't considered. */
+    "types": [],
+
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*.ts"]
+}

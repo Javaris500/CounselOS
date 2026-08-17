@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "CounselOS NestJS",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "types": ["node", "jest"],
+
+    /* NestJS dependency injection is built on these two. emitDecoratorMetadata
+       is what writes the design:paramtypes metadata the container reads to know
+       a constructor wants TransactionsRepository. Without it, every injection
+       fails at runtime with an unhelpful error. Do not turn these off. */
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+
+    /* CommonJS + isolatedModules disagree about re-exporting types, and Nest's
+       decorator emit needs the classic transform. */
+    "isolatedModules": false,
+
+    "strictPropertyInitialization": false
+  }
+}

@@ -207,6 +207,14 @@ Full fixture and seed detail is in `11-test-data.md` Part 6.
 
 ### Global Test Setup
 
+> **STALE — read the code, not this block.** The real file is
+> `apps/api/test/setup/containers.ts`, with `apps/api/test/setup/teardown.ts`
+> alongside it, both wired in `apps/api/jest.config.ts`. The example below
+> predates the Drizzle decision and still runs `prisma migrate deploy`; the
+> current version uses `@testcontainers/postgresql`, creates the `vector` /
+> `pgcrypto` / `pg_trgm` extensions, and migrates with
+> `drizzle-orm/postgres-js/migrator`. Kept here only until this doc is rewritten.
+
 `test/setup/global-setup.ts`:
 
 ```typescript

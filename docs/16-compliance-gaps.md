@@ -61,7 +61,7 @@ Building the underlying capabilities now costs one endpoint and one column. Retr
 
 - [ ] **Write a privacy notice** — not legally required yet under the exemption, but expected by any firm evaluating you, and required the moment you scale
 - [ ] **Confirm the firm's SBA status** in writing for the file — employee count against their NAICS code
-- [ ] **Execute vendor DPAs** — Anthropic (zero data retention), Voyage AI, Supabase, Resend. This is the Opinion 705 requirement and it's the real obligation.
+- [ ] **Execute vendor DPAs** — Anthropic (zero data retention), Voyage AI, Supabase, Resend, Sentry. This is the Opinion 705 requirement and it's the real obligation. Sentry is easy to forget because it is infrastructure rather than a feature, but it receives stack traces and error messages from a system holding privileged matter content — see `09-legal-compliance.md`, Vendor Chain.
 - [ ] **Write a breach response procedure** — who is notified, in what order, within what window. Needed before an incident, not during one.
 - [ ] **Document the subprocessor list** — every vendor touching client data, what they see, and under what agreement. This becomes a security questionnaire answer.
 - [ ] **Reassess when CounselOS approaches 480–490 employees** or takes on a non-exempt client (a firm inside a larger non-small entity)
@@ -276,7 +276,7 @@ Everything identified that isn't yet in the docs, by urgency.
 - [ ] Backup **restoration** test — not just that backups exist
 - [ ] Breach response procedure (written)
 - [ ] Subprocessor list (written)
-- [ ] Vendor DPAs executed — Anthropic ZDR, Voyage, Supabase, Resend
+- [ ] Vendor DPAs executed — Anthropic ZDR, Voyage, Supabase, Resend, Sentry (US data region + shortest retention)
 
 ### Shortly after launch
 - [ ] Bulk confirm for extracted deadlines

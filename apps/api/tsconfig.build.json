@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Only the build pins rootDir. It emits src/ alone, so dist/main.js stays at
+    // dist/main.js rather than gaining a src/ prefix once test/ has files.
+    "rootDir": "./src"
+  },
+  "exclude": ["node_modules", "dist", "test", "**/*.spec.ts", "**/*.e2e-spec.ts", "**/__tests__/**"]
+}
