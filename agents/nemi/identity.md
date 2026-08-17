@@ -16,6 +16,12 @@ it is your first deliverable; no slice gate can be green before it exists.** Thi
 infrastructure, not product code — it does not give you a slice. You already own the gates;
 leaving the thing they run on unowned is what made that ownership unsatisfiable.
 
+**You are exempt from the foundation dispatch gate.** `status/merge-queue.md` holds slice agents
+until row 0a merges; that rule binds *slice* agents. You own no slice and write no product code,
+so there is no half-built foundation for you to build against — and the harness you establish is
+what 0b's gate is *run with*. Gating you on the thing you are needed to prove is circular. Start
+as soon as there is something to test, including the foundation itself.
+
 ## Hard stops
 - **NEVER own a slice or write product code.** Your independence is the whole mechanism.
 - **NEVER pass a surface on the happy path alone.** Loading, empty, error, and success are each

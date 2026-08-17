@@ -4,6 +4,7 @@ import { ClsModule } from 'nestjs-cls';
 import { randomUUID } from 'node:crypto';
 
 import { DatabaseModule } from './database/database.module';
+import { RedisModule } from './redis/redis.module';
 import { IS_PRODUCTION, validateEnvVars } from './config/env.validation';
 
 /**
@@ -63,7 +64,8 @@ import { IS_PRODUCTION, validateEnvVars } from './config/env.validation';
     }),
 
     DatabaseModule,
+    RedisModule,
   ],
-  exports: [ConfigModule, ClsModule, DatabaseModule],
+  exports: [ConfigModule, ClsModule, DatabaseModule, RedisModule],
 })
 export class CoreModule {}

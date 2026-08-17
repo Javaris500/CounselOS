@@ -272,6 +272,11 @@ describe('schema alignment', () => {
     // consequence, which is what the TREC engine actually depends on: the value
     // does not move when the reader's timezone differs from the writer's.
     //
+    // Fixtures here use jurisdiction TEST_ONLY so they cannot collide with the
+    // seed, which owns the real Texas and federal holidays in this same shared
+    // database. Two suites inserting the same (date, jurisdiction) is a
+    // cross-suite failure that looks like a schema bug.
+    //
     // Asia/Tokyo is UTC+9, far enough that any instant-based storage shifts the
     // calendar day. If this ever returns 2026-11-25 or 2026-11-27, the column
     // regressed to a timestamp and every holiday roll rule is off by a day.
@@ -281,18 +286,18 @@ describe('schema alignment', () => {
     try {
       const [inserted] = await db
         .insert(schema.holidays)
-        .values({ name: 'Thanksgiving', jurisdiction: 'FEDERAL', date: '2026-11-26' })
+        .values({ name: 'Roundtrip Probe', jurisdiction: 'TEST_ONLY', date: '2026-11-26' })
         .returning({ date: schema.holidays.date });
       expect(inserted?.date).toBe('2026-11-26');
 
       const [read] = await db
         .select({ date: schema.holidays.date })
         .from(schema.holidays)
-        .where(eq(schema.holidays.name, 'Thanksgiving'));
+        .where(eq(schema.holidays.name, 'Roundtrip Probe'));
       expect(read?.date).toBe('2026-11-26');
       expect(typeof read?.date).toBe('string');
     } finally {
-      await db.delete(schema.holidays).where(eq(schema.holidays.name, 'Thanksgiving'));
+      await db.delete(schema.holidays).where(eq(schema.holidays.name, 'Roundtrip Probe'));
       await db.execute(sqlOp`SET TIME ZONE 'UTC'`);
     }
   });
@@ -323,17 +328,17 @@ describe('schema alignment', () => {
     // seed row would let a roll rule count the same day twice.
     await sql`
       INSERT INTO holidays (name, jurisdiction, date)
-      VALUES ('Juneteenth', 'TX_STATE', '2026-06-19')
+      VALUES ('Dup Probe', 'TEST_ONLY', '2026-06-19')
     `;
     try {
       await expect(
         sql`
           INSERT INTO holidays (name, jurisdiction, date)
-          VALUES ('Juneteenth (duplicate seed)', 'TX_STATE', '2026-06-19')
+          VALUES ('Dup Probe (second)', 'TEST_ONLY', '2026-06-19')
         `,
       ).rejects.toThrow(/duplicate key/i);
     } finally {
-      await sql`DELETE FROM holidays WHERE date = '2026-06-19'`;
+      await sql`DELETE FROM holidays WHERE jurisdiction = 'TEST_ONLY'`;
     }
   });
 });

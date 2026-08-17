@@ -1,7 +1,12 @@
 import { Module } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
-import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
+import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
+import { SentryModule } from '@sentry/nestjs/setup';
 
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
+import { CorrelationIdInterceptor } from './common/interceptors/correlation-id.interceptor';
+import { RequestLoggingInterceptor } from './common/interceptors/request-logging.interceptor';
+import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { ZodValidationPipe } from './common/pipes/zod-validation.pipe';
 import { CoreModule } from './core.module';
 import { HealthModule } from './modules/health/health.module';
 
@@ -31,21 +36,32 @@ import { HealthModule } from './modules/health/health.module';
     CoreModule,
     HealthModule,
   ],
+  /**
+   * ORDER IS EXECUTION ORDER (18 §3). Interceptors run top-down on the way in.
+   *
+   *   1. CorrelationId  — must be first; everything below reads the ID from CLS
+   *   2. RequestLogging — needs the ID, wraps the handler to time it
+   *   3. Response       — outermost on the way out, so it wraps the final value
+   *
+   * Guards (JwtAuthGuard → RolesGuard → MatterAccessGuard) slot in between
+   * interceptors and the pipe when Module 2 and 8G land. That order is
+   * load-bearing: a matter-access guard that runs before authentication has no
+   * user to check.
+   */
   providers: [
+    { provide: APP_INTERCEPTOR, useClass: CorrelationIdInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: RequestLoggingInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: ResponseInterceptor },
+    { provide: APP_PIPE, useClass: ZodValidationPipe },
     {
       /**
-       * Reports unhandled exceptions, then delegates to Nest's default
-       * BaseExceptionFilter for the response.
-       *
-       * Module 1 brings the project's own global filter for the error envelope
-       * ({ success: false, error: { code, message, details, requestId } }).
-       * When it lands it must be registered AFTER this one — registration order
-       * is execution order (18 §3) — and it must not swallow the exception
-       * before Sentry sees it. Extend SentryGlobalFilter or capture explicitly;
-       * do not simply replace it.
+       * Owns every error response body. It EXTENDS SentryGlobalFilter rather
+       * than sitting alongside it: two independent APP_FILTERs would mean the
+       * last one wins and unhandled exceptions silently stop reaching Sentry —
+       * the "errors vanish" state instrument.ts exists to prevent.
        */
       provide: APP_FILTER,
-      useClass: SentryGlobalFilter,
+      useClass: GlobalExceptionFilter,
     },
   ],
 })

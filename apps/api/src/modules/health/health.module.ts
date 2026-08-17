@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 
+import { Clock } from '../../common/clock';
 import { HealthController } from './health.controller';
+import { HealthService } from './health.service';
 
 /**
  * Owns no table and has no service — the liveness probe has no business rules
@@ -13,5 +15,6 @@ import { HealthController } from './health.controller';
  */
 @Module({
   controllers: [HealthController],
+  providers: [HealthService, Clock],
 })
 export class HealthModule {}
