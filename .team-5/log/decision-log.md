@@ -10,6 +10,8 @@ If yes, log it.
 
 | # | date | agent | slice | decision | rationale | rejected |
 |---|---|---|---|---|---|---|
+| 1 | 2026-08-18 | operator | 0b | Attorney login proxies through the API; the browser never talks to Supabase | CLAUDE.md fixes the access token in memory, never localStorage, and the Supabase browser SDK persists to localStorage by default. A browser→Supabase path also bypasses the matter-access guard and access_log. Refresh token becomes an httpOnly cookie. Contradicts 05 §L2, which needs updating. | Direct browser→Supabase auth with @supabase/ssr (the vendor quickstart) |
+| 2 | 2026-08-18 | operator | 0b | RLS enabled on all 27 tables now, deny-by-default, no policies | Distinct from the Phase 2 multi-tenancy work. Supabase serves `public` over PostgREST and the publishable key is public by design, so a table without RLS is readable with it. The API connects as table owner and bypasses RLS, so it costs nothing. | Deferring all RLS to Phase 2 as the docs describe |
 
 ## Belongs here
 
