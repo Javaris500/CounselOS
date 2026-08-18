@@ -17,7 +17,16 @@ import { useAuthStore } from '@/stores/auth.store';
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+/**
+ * The API ORIGIN — no path, no `/v1`.
+ *
+ * Every path handed to apiFetch already begins with `/v1`, because SWR keys are
+ * the literal API path (queryKeys.ts) and the key must match the URL exactly.
+ * Putting `/v1` in this variable too yields `/v1/v1/dashboard`, which 404s in a
+ * way that reads like a routing bug on the server rather than a config mistake
+ * here. The trailing slash is stripped for the same reason.
+ */
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001').replace(/\/+$/, '');
 
 /** Thrown for every unsuccessful response. Carries the typed code, not a string. */
 export class ApiError extends Error {
