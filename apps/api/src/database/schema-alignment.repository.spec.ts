@@ -249,6 +249,37 @@ describe('schema alignment', () => {
     ]);
   });
 
+  it('has row level security enabled on every table', async () => {
+    // Deny-by-default against Supabase's PostgREST Data API (migration 0003).
+    // The publishable key is public by design, and a table without RLS is
+    // readable with it — bypassing the matter-access guard and the access_log.
+    //
+    // Asserted as an exact empty set rather than a count, so table 28 cannot
+    // ship without it. This is the check that makes the invariant permanent
+    // instead of a thing someone remembered once.
+    const rows = await sql<{ tablename: string }[]>`
+      SELECT c.relname AS tablename
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relrowsecurity = false
+      ORDER BY c.relname
+    `;
+    expect(rows.map((r) => r.tablename)).toEqual([]);
+  });
+
+  it('does not FORCE row level security — the owner must still bypass it', async () => {
+    // FORCE would apply RLS to the table owner too, and the API connects as
+    // the owner. With no policies defined that would return zero rows for
+    // every query in the system — a total outage that looks like a data loss.
+    const rows = await sql<{ tablename: string }[]>`
+      SELECT c.relname AS tablename
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relforcerowsecurity = true
+    `;
+    expect(rows.map((r) => r.tablename)).toEqual([]);
+  });
+
   it('has every index schema.ts declares', async () => {
     const tables = listTables();
     const declared = tables
