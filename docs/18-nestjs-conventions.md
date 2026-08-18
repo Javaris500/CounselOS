@@ -284,7 +284,8 @@ HTTP process     SseSubscriber (OnModuleInit) — SUBSCRIBE sse:firm:*
 - [ ] **Don't use `Test.createTestingModule` for service unit tests.** The service takes a repository in its constructor — that's the seam. Spinning a DI container to inject one mock is pure overhead.
 - [ ] **In E2E, override only the true externals**: Anthropic, Voyage AI, Resend, Supabase Auth. Never mock our own database, queue, services, or repositories. An E2E test with a mocked repository proves nothing about the request lifecycle.
 - [ ] **Guards are overridden by class, not disabled.** `overrideGuard(JwtAuthGuard)` when a test needs a specific identity — but the module's own E2E gate uses a real JWT, per `01-codebase.md`.
-- [ ] **Close the app in `afterAll`.** `await app.close()` — otherwise Jest hangs on open Redis and Postgres handles, and the failure looks like a flaky test.
+- [ ] **Close the app in `afterAll`.** `- [ ] **The auth seam is the KEY SOURCE, not the guard.** An E2E overrides the `JWKS` provider with `createLocalJWKSet` and signs its own ES256 tokens (`test/helpers/auth.helper.ts`). Overriding `JwtAuthGuard` or `TokenVerifier` instead would delete the thing the gate exists to prove — the signature check, the `algorithms: ['ES256']` allowlist, and the issuer/audience pins would all go untested, and the expired case would degrade to "my fake threw what I told it to throw".
+await app.close()` — otherwise Jest hangs on open Redis and Postgres handles, and the failure looks like a flaky test.
 
 ---
 

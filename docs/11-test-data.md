@@ -422,7 +422,6 @@ RESEND_FROM_EMAIL=
 SENTRY_DSN=
 
 # Security
-JWT_SECRET=            # generate: openssl rand -base64 32
 HMAC_SECRET=           # generate: openssl rand -base64 32
 
 # App

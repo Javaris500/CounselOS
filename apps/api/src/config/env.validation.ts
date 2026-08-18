@@ -47,7 +47,10 @@ const baseSchema = z.object({
   REDIS_URL: z.string().min(1),
 
   // --- Security ---
-  JWT_SECRET: z.string().min(32, 'Generate with: openssl rand -base64 32'),
+  // No JWT_SECRET. Supabase signs access tokens with ES256 and we verify against
+  // the public key from its JWKS endpoint, so this service holds nothing capable
+  // of MINTING a token — only of verifying one. A shared secret here would be a
+  // forgery oracle: anyone holding it could mint a token for any user.
   /** Signs client-portal tokens. Only the SHA-256 hash is ever stored. */
   HMAC_SECRET: z.string().min(32, 'Generate with: openssl rand -base64 32'),
 
@@ -87,6 +90,26 @@ const envSchema = baseSchema.superRefine((env, ctx) => {
       code: 'custom',
       path: ['DATABASE_URL'],
       message: 'Must include ?sslmode=require outside development.',
+    });
+  }
+
+  /**
+   * The JWT verification keys are fetched from this origin, and the expected
+   * `iss` claim is DERIVED from it — so issuer checking alone does not defend
+   * against an environment swap, because both move together. Pinning the origin
+   * is what closes it: anyone who can point this at another host could otherwise
+   * mint sessions we would accept as valid.
+   *
+   * There is deliberately no SUPABASE_JWKS_URL variable, for the same reason.
+   * A custom Supabase auth domain would mean editing this pattern — a deliberate
+   * decision rather than a silent config change.
+   */
+  if (!/^https:\/\/[a-z0-9]+\.supabase\.co$/.test(env.SUPABASE_URL)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['SUPABASE_URL'],
+      message:
+        'Must be https://<project-ref>.supabase.co outside development — JWT signing keys and the expected issuer are both derived from this origin.',
     });
   }
 });

@@ -6,18 +6,39 @@ import './instrument';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
 
 import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  // Typed as the Express app so `trust proxy` is reachable — see below.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
   const config = app.get(ConfigService);
   const logger = new Logger('Bootstrap');
 
   // Drains in-flight requests on SIGTERM instead of dropping them mid-response.
   // Also what lets DatabaseModule close its pool cleanly (18 §6).
   app.enableShutdownHooks();
+
+  /**
+   * Behind a load balancer, req.ip is the PROXY's address unless Express is
+   * told to read X-Forwarded-For. Two things break without this, both quietly:
+   *
+   *   - Per-IP login throttling collapses into one shared bucket, so ten failed
+   *     attempts by anyone lock out the entire firm. A self-inflicted DoS.
+   *   - access_log.ip_address (8M-1) records the proxy for every row, which
+   *     makes the read-access audit trail worthless in the one situation it
+   *     exists for.
+   *
+   * `1`, not `true`: trust exactly one hop, the platform's own proxy. Trusting
+   * the whole chain would let a client spoof its own address by setting the
+   * header — turning the fix into the vulnerability. Development runs with no
+   * proxy at all, where reading the header would be exactly that mistake.
+   */
+  if (config.getOrThrow<string>('NODE_ENV') === 'production') {
+    app.set('trust proxy', 1);
+  }
 
   app.use(helmet());
 

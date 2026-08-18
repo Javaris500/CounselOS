@@ -52,6 +52,18 @@ describe('seed', () => {
     expect(rows[0]?.slug).toBe('rodriguez-associates');
   });
 
+  it('links every seeded user to a stable auth_id', async () => {
+    // The guard resolves users WHERE auth_id = <token sub>. A null auth_id means
+    // an authenticated person with no application identity, which is a 401 — so
+    // an unlinked fixture would make every authenticated E2E unreachable.
+    const rows = await sql<{ auth_id: string | null }[]>`
+      SELECT auth_id FROM users WHERE firm_id = ${SEED_IDS.firm} ORDER BY email
+    `;
+    expect(rows).toHaveLength(4);
+    expect(rows.every((r) => r.auth_id !== null)).toBe(true);
+    expect(new Set(rows.map((r) => r.auth_id)).size).toBe(4);
+  });
+
   it('creates the four roles the Slice 0 gate exercises', async () => {
     const rows = await sql<{ role: string; is_active: boolean }[]>`
       SELECT role, is_active FROM users WHERE firm_id = ${SEED_IDS.firm} ORDER BY role

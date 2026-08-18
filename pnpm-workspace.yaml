@@ -46,6 +46,10 @@ catalog:
   '@types/supertest': ^7.2.1
   bullmq: ^6.1.1
   concurrently: ^10.0.5
+  # Reads the httpOnly refresh-token cookie. Setting cookies is native to
+  # express; reading them is not.
+  'cookie-parser': ^1.4.7
+  '@types/cookie-parser': ^1.4.9
   drizzle-kit: ^0.31.10
 
   # --- runtime: data ---
@@ -56,6 +60,10 @@ catalog:
 
   # --- testing ---
   jest: ^30.4.2
+  # Pinned to v5: v6 is ESM-only ("type": "module") and apps/api compiles to
+  # CommonJS, which jest 30 + ts-jest cannot require() without transform surgery.
+  # ~ pin for the same reason as @supabase/supabase-js — this verifies auth tokens.
+  jose: ~5.10.0
   # Network-layer mocking. Intercepts below apiFetch so the real auth lifecycle
   # runs in tests — see 06 Part 14.
   msw: ^2.15.0

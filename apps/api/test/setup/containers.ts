@@ -64,7 +64,6 @@ const TEST_ENV_DEFAULTS: Readonly<Record<string, string>> = {
   SUPABASE_ANON_KEY: 'test-anon-key',
   SUPABASE_SERVICE_KEY: 'test-service-key',
   SUPABASE_STORAGE_BUCKET: 'documents',
-  JWT_SECRET: 'test-jwt-secret-at-least-32-characters-long',
   HMAC_SECRET: 'test-hmac-secret-at-least-32-characters-long',
   FRONTEND_URL: 'http://localhost:3000',
   CLIENT_PORTAL_URL: 'http://localhost:3000',

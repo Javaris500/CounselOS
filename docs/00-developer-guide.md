@@ -133,7 +133,6 @@ RESEND_FROM_EMAIL=
 SENTRY_DSN=
 
 # Security — generate with: openssl rand -base64 32
-JWT_SECRET=
 HMAC_SECRET=                  # signs client-portal tokens
 
 # App
@@ -217,6 +216,8 @@ Process detail is in `01-codebase.md`. This is the order and the gate for each.
 
 **Slice 0 — Foundation.** Backend L1 + L2 + 8G access guard + 8L `/v1/health/services`. Frontend shell: layouts, route groups, `apiFetch` with single-flight refresh, both Zustand stores, design primitives off the v5 tokens. Demo seed working.
 *Gate:* login → dashboard · expired token silently refreshes · deactivated user lands on `/auth/deactivated` · paralegal denied an unassigned matter sees the **explaining** error, not a bare 403.
+
+> **The fourth clause belongs to slice 1, not slice 0** (noted 2026-08-18). It is Layer 8G, which resolves against `transactions.assigned_attorney_id` — so it depends on Module 3, which is slice 1. 8G cannot be built or tested before there are transaction-scoped routes to guard. Slice 0 closes on the first three clauses; the fourth moves with 8G.
 
 **Slice 1 — Transactions.** L3 + pipeline + detail shell with tab nav.
 *Gate:* create → appears in the right pipeline column → open detail → change status → invalid transition blocked with a visible reason.
