@@ -1,9 +1,15 @@
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
 import { Controller, Get, INestApplication, Module } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 import { z } from 'zod';
 
+import { authHeader, createTestKeyring, type TestKeyring } from '../../../test/helpers/auth.helper';
+import { Public } from '../../common/decorators/public.decorator';
 import { AppModule } from '../../app.module';
+import { SEED_IDS } from '../../database/seed';
+import { JWKS } from '../auth/jwks.provider';
 
 /**
  * Routes that exist only in this spec, mounted alongside AppModule.
@@ -17,6 +23,7 @@ import { AppModule } from '../../app.module';
  * must leak nothing, and it was silently returning Nest's default body until
  * this test existed.
  */
+@Public()
 @Controller('__test')
 class ExplodingController {
   @Get('boom')
@@ -52,16 +59,35 @@ class TestOnlyModule {}
  */
 describe('Module 1 — foundation (e2e)', () => {
   let app: INestApplication;
+  let keyring: TestKeyring;
+  /** /v1/health/services is role-gated now (05 §8L), so its tests authenticate. */
+  let attorneyToken: string;
 
   beforeAll(async () => {
+    for (const script of ['reset.ts', 'seed.ts']) {
+      execFileSync('npx', ['tsx', path.resolve(__dirname, '../../database', script)], {
+        env: { ...process.env, NODE_ENV: 'test' },
+        cwd: path.resolve(__dirname, '../../..'),
+        stdio: 'pipe',
+      });
+    }
+
+    keyring = await createTestKeyring();
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule, TestOnlyModule],
-    }).compile();
+    })
+      .overrideProvider(JWKS)
+      .useValue(keyring.jwks)
+      .compile();
     app = moduleRef.createNestApplication();
     // Mirror main.ts. The prefix is part of the contract — every documented
     // route is /v1/*, health included.
     app.setGlobalPrefix('v1');
     await app.init();
+
+    attorneyToken = await keyring.sign(SEED_IDS.authIds.attorney, {
+      email: 'james@rodriguezlaw.test',
+    });
   });
 
   afterAll(async () => {
@@ -87,7 +113,9 @@ describe('Module 1 — foundation (e2e)', () => {
 
   describe('service honesty (8L)', () => {
     it('returns per-dependency state in the success envelope', async () => {
-      const res = await request(app.getHttpServer()).get('/v1/health/services');
+      const res = await request(app.getHttpServer())
+        .get('/v1/health/services')
+        .set(authHeader(attorneyToken));
 
       expect(res.status).toBe(200);
       // Unlike liveness, this one IS enveloped — the frontend consumes it as a
@@ -104,7 +132,9 @@ describe('Module 1 — foundation (e2e)', () => {
     });
 
     it('reports live dependencies as ok', async () => {
-      const res = await request(app.getHttpServer()).get('/v1/health/services');
+      const res = await request(app.getHttpServer())
+        .get('/v1/health/services')
+        .set(authHeader(attorneyToken));
       expect(res.body.data.database.status).toBe('ok');
       expect(res.body.data.redis.status).toBe('ok');
     });
@@ -114,7 +144,9 @@ describe('Module 1 — foundation (e2e)', () => {
       // no Anthropic, Voyage, or Resend key, so this is the real unconfigured
       // path rather than a simulated one. Calling it `down` would send the UI
       // into an error state for a feature the firm simply has not turned on.
-      const res = await request(app.getHttpServer()).get('/v1/health/services');
+      const res = await request(app.getHttpServer())
+        .get('/v1/health/services')
+        .set(authHeader(attorneyToken));
 
       for (const name of ['anthropic', 'voyage', 'resend']) {
         expect(res.body.data[name].status).toBe('not_configured');
@@ -124,7 +156,11 @@ describe('Module 1 — foundation (e2e)', () => {
 
     it('leaks no key material or connection detail', async () => {
       const body = JSON.stringify(
-        (await request(app.getHttpServer()).get('/v1/health/services')).body,
+        (
+          await request(app.getHttpServer())
+            .get('/v1/health/services')
+            .set(authHeader(attorneyToken))
+        ).body,
       );
       expect(body).not.toMatch(/postgres:\/\/|redis:\/\/|rediss:\/\//);
       expect(body).not.toMatch(/test-service-key|test-anon-key/);

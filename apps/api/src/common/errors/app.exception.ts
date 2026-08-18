@@ -70,6 +70,13 @@ export class UnprocessableException extends AppException {
   }
 }
 
+/** 429 — too many attempts. Redis-backed counters; never in-memory (CLAUDE.md §4). */
+export class TooManyRequestsException extends AppException {
+  constructor(message = 'Too many attempts. Try again shortly.') {
+    super(ERROR_CODES.RATE_LIMIT_EXCEEDED, message, HttpStatus.TOO_MANY_REQUESTS);
+  }
+}
+
 /** 409 — a uniqueness or concurrency conflict. */
 export class ConflictException extends AppException {
   constructor(message: string, code: ErrorCode) {

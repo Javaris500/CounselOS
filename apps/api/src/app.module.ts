@@ -7,6 +7,7 @@ import { CorrelationIdInterceptor } from './common/interceptors/correlation-id.i
 import { RequestLoggingInterceptor } from './common/interceptors/request-logging.interceptor';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { ZodValidationPipe } from './common/pipes/zod-validation.pipe';
+import { AuthModule } from './modules/auth/auth.module';
 import { CoreModule } from './core.module';
 import { HealthModule } from './modules/health/health.module';
 
@@ -34,6 +35,9 @@ import { HealthModule } from './modules/health/health.module';
      */
     SentryModule.forRoot(),
     CoreModule,
+    // Registers the global JwtAuthGuard and RolesGuard, so every route is
+    // protected unless it says @Public().
+    AuthModule,
     HealthModule,
   ],
   /**

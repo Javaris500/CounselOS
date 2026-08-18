@@ -408,6 +408,21 @@ export class TestFactory {
 }
 ```
 
+> **INVALID — read `apps/api/test/helpers/auth.helper.ts` instead.** This helper
+> signs **HS256** with a shared `JWT_SECRET`. Supabase signs access tokens with
+> **ES256**, verified against a public key from its JWKS endpoint, so there is
+> no secret to sign with — and `JWT_SECRET` has been deleted, which means this
+> code will not even compile.
+>
+> The working replacement is `createTestKeyring()`: it generates an ES256
+> keypair in the test process and exposes a `createLocalJWKSet` that a suite
+> swaps in for the `JWKS` provider. Because `createLocalJWKSet` and the
+> production `createRemoteJWKSet` return the same type, `jwtVerify` runs
+> identically in tests and production — signature, algorithm allowlist, issuer,
+> audience, and expiry are all really checked. Sign with `expiresIn: -60` for
+> the expired case; do not pin the app clock, which would desync it from
+> Postgres `now()` and Redis TTLs.
+
 ### Auth Helper — Issue Real JWTs for Tests
 
 `test/helpers/auth.helper.ts`:

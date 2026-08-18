@@ -49,6 +49,20 @@ export const SEED_IDS = {
     /** Deactivated. Proves the USER_INACTIVE path without touching a live user. */
     inactive: '00000000-0000-4000-8000-000000000013',
   },
+  /**
+   * Supabase Auth UUIDs — the `sub` claim of an access token, and what
+   * `users.auth_id` is matched against on every authenticated request.
+   *
+   * Fixed rather than null so tests can mint a token for a known identity. In
+   * production these are real Supabase UUIDs, written by the first-login link
+   * in AuthService; seeding them just means the demo firm arrives pre-linked.
+   */
+  authIds: {
+    owner: '00000000-0000-4000-8000-0000000000a0',
+    attorney: '00000000-0000-4000-8000-0000000000a1',
+    paralegal: '00000000-0000-4000-8000-0000000000a2',
+    inactive: '00000000-0000-4000-8000-0000000000a3',
+  },
   transactions: {
     manorRd: '00000000-0000-4000-8000-000000000020',
     clawsonRd: '00000000-0000-4000-8000-000000000021',
@@ -86,12 +100,13 @@ async function seed(): Promise<void> {
       settings: { intakeEnabled: true, clientPortalEnabled: true, alertEmailEnabled: true },
     });
 
-    // auth_id stays null: it is populated when a user first authenticates
-    // against Supabase, and Phase 1's Supabase project is created in 0b.
+    // auth_id is seeded rather than left null, so an E2E can mint a token for a
+    // known identity. Real users are linked on first login by AuthService.
     await db.insert(schema.users).values([
       {
         id: SEED_IDS.users.owner,
         firmId: SEED_IDS.firm,
+        authId: SEED_IDS.authIds.owner,
         role: 'OWNER',
         email: 'elena@rodriguezlaw.test',
         fullName: 'Elena Rodriguez',
@@ -100,6 +115,7 @@ async function seed(): Promise<void> {
       {
         id: SEED_IDS.users.attorney,
         firmId: SEED_IDS.firm,
+        authId: SEED_IDS.authIds.attorney,
         role: 'ATTORNEY',
         email: 'james@rodriguezlaw.test',
         fullName: 'James Okafor',
@@ -108,6 +124,7 @@ async function seed(): Promise<void> {
       {
         id: SEED_IDS.users.paralegal,
         firmId: SEED_IDS.firm,
+        authId: SEED_IDS.authIds.paralegal,
         role: 'PARALEGAL',
         email: 'sarah@rodriguezlaw.test',
         fullName: 'Sarah Kim',
@@ -115,6 +132,7 @@ async function seed(): Promise<void> {
       {
         id: SEED_IDS.users.inactive,
         firmId: SEED_IDS.firm,
+        authId: SEED_IDS.authIds.inactive,
         role: 'ATTORNEY',
         email: 'former@rodriguezlaw.test',
         fullName: 'Former Attorney',

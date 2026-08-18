@@ -2,6 +2,8 @@ import { Controller, Get } from '@nestjs/common';
 
 import type { ServiceHealth } from '@counselos/shared';
 
+import { Public } from '../../common/decorators/public.decorator';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { NoEnvelope } from '../../common/interceptors/response.interceptor';
 import { HealthService } from './health.service';
 
@@ -27,6 +29,7 @@ export class HealthController {
    * `{ success: true, data: { status: 'ok' } }` would break the probe and the
    * documented smoke test at the same time.
    */
+  @Public()
   @Get()
   @NoEnvelope()
   check(): { status: 'ok' } {
@@ -38,11 +41,11 @@ export class HealthController {
    * touch dependencies — that is its entire job — and it returns the standard
    * success envelope because the frontend consumes it like any other resource.
    *
-   * ROLE GATING IS NOT YET APPLIED. 8L restricts this to OWNER and ATTORNEY;
-   * that guard arrives with Module 2, which needs the Supabase project. Until
-   * then the route is open, and it deliberately exposes only service names and
-   * states — no keys, no URLs, no error detail.
+   * OWNER and ATTORNEY only, per 05 §8L — dependency state is operational
+   * detail, not something a paralegal needs. It exposes only service names and
+   * states regardless: no keys, no URLs, no error detail.
    */
+  @Roles('OWNER', 'ATTORNEY')
   @Get('services')
   async services(): Promise<Record<string, ServiceHealth>> {
     return this.health.checkAll();

@@ -147,7 +147,7 @@ Supabase Auth manages credentials. Your Postgres `users` table manages applicati
 On every authenticated request:
 ```
 Bearer token arrives
-  → JwtAuthGuard validates JWT against Supabase JWT secret
+  → JwtAuthGuard verifies the JWT against Supabase's PUBLIC key (ES256/JWKS)
   → Extract sub (Supabase Auth UUID) from validated token
   → Redis check: get('user:{sub}')
       hit  → return cached User object (5-min TTL)
@@ -160,18 +160,22 @@ Bearer token arrives
 
 ### Two Auth Flows — Document Both Separately
 
-- [ ] **Attorney flow** — email + password via Supabase Auth. Standard login. Returns access token + refresh token. Frontend stores both.
-- [ ] **Client flow** — magic link only. Attorney triggers invitation from CounselOS. Supabase sends magic link email. Client clicks link, gets authenticated, gets JWT. Client User record already exists (created by attorney invitation). Clients never set a password.
+- [x] **Attorney flow** — email + password, **proxied through `POST /v1/auth/login`**. The browser never talks to Supabase. The access token comes back in the response body and lives in memory; the refresh token is set as an **httpOnly cookie** the browser cannot read. `apiFetch` owns the lifecycle (06 Part 6).
+- [ ] ~~**Client flow** — magic link~~ — **STALE, corrected 2026-08-18.** Clients have no Supabase account and no `CLIENT` role in Phase 1. A signed HMAC URL grants read-only access to one transaction for 30 days (`client_access_tokens`, Layer 10). See `CLAUDE.md` and `memory/Context.md`.
 
 ### JWT Strategy
 
-- [ ] Supabase JWT secret configured in NestJS passport-jwt strategy
-- [ ] JWT validated on every protected request — signature, expiry, issuer
+- [x] **The `auth_id` link.** `users.auth_id` starts null — a user is invited before they ever authenticate. On the first request whose `sub` is unknown, the row matching the token's **verified email** is linked, once. An email already bound to a different `auth_id` is **never** relinked, or anyone able to create a Supabase account with a firm member's address would inherit their access.
+- [x] **ES256 via JWKS, verified with `jose`** — corrected 2026-08-18. The original line said *"Supabase JWT secret configured in NestJS passport-jwt strategy"*, which describes the legacy HS256 shared-secret model. This project's Supabase signs **ES256**, so verification fetches a public key from `<SUPABASE_URL>/auth/v1/.well-known/jwks.json`. There is no shared secret, and `JWT_SECRET` has been **deleted** — the API holds nothing capable of minting a token, only of verifying one.
+- [x] `algorithms: ['ES256']` allowlist — without it an HS256 token forged using the public key as the shared secret would verify.
+- [x] `SUPABASE_URL` is origin-pinned outside dev/test. The expected `iss` derives from the same variable, so issuer checking alone does not defend against an env swap.
+- [x] A JWKS outage returns **503, not 401** — a 401 would make the frontend attempt a refresh and then sign the whole firm out during a Supabase blip.
+- [ ] JWT validated on every protected request — signature, algorithm, expiry, issuer, audience
 - [ ] `sub` claim extracted from validated token — this is the Supabase Auth UUID
 - [ ] User hydration from `sub` → Redis cache → Postgres, in that order
 - [ ] **Token expiry handling** — expired token returns `error.code: "TOKEN_EXPIRED"` not generic 401, so frontend knows to refresh rather than redirect to login
 - [ ] **Deactivated user handling** — `is_active = false` checked on User record during hydration. Returns 401 with `error.code: "USER_INACTIVE"` immediately. Does not wait for JWT expiry. Access revoked within one cache TTL (5 minutes maximum).
-- [ ] **Token refresh** — frontend responsibility. On 401 TOKEN_EXPIRED, frontend calls Supabase refresh endpoint silently, gets new access token, retries original request transparently. Backend never sees the refresh — it just receives a valid new token.
+- [x] **Token refresh — proxied, corrected 2026-08-18.** The original line said the frontend calls Supabase's refresh endpoint directly and *"the backend never sees the refresh"*. It does: `POST /v1/auth/refresh` reads the httpOnly cookie, refreshes with Supabase, **rotates the cookie**, and returns the new access token. The browser cannot read the refresh token at all, which is the point — `apiFetch` still does this silently with single-flight, then retries once.
 - [ ] `[PHASE 2]` Add `firm_id` as a claim in the JWT payload itself. Eliminates DB lookup for firm scoping on every request. Issued at login time.
 
 ### Guards & Decorators
@@ -2366,7 +2370,6 @@ SENTRY_ORG=
 SENTRY_PROJECT=
 
 # Security
-JWT_SECRET=                  # generate: openssl rand -base64 32
 HMAC_SECRET=                 # generate: openssl rand -base64 32
 
 # App
