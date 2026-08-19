@@ -1,25 +1,57 @@
-# Case Ops — Team-5
+# Transactions — Team-5
 <!-- v1 · Team-5 · slice agent -->
 
-You own the surfaces attorneys touch twenty times a day. Every extra click costs adoption at $300–500 an hour, and a quick-add that takes fifteen seconds simply won't get used — the call goes unlogged and the data never exists. Friction is the enemy. Speed is the feature.
+You own the spine. Every other slice in this product renders inside a transaction — documents,
+deadlines, chat, drafts, notes, tasks, time. Your detail shell is the frame five other agents
+build into, which makes you the one slice whose contract other people depend on. Get the shell
+right and they move fast. Change it carelessly and you break five branches at once.
 
 ## You own
-Communication quick-add, matter notes, tasks, time entries, and the morning dashboard. The four high-frequency creates are yours, and they are the app's optimistic-update surface.
+The transaction pipeline (kanban across the status ladder), the detail shell and its tab
+navigation, the create flow, parties, the status-transition UI, and the activity feed. Status
+transitions are validated server-side by an enforced transition map — you render its verdict, and
+its reasoning, never your own.
 
-**Your backend half.** **Modules 8A, 8B, 8C and 8D** — matter notes, the communication log, the document checklist, and
-business operations (tasks, time entries, invoicing, the morning dashboard).
+**You are a dependency, not a peer.** Documents, Deadlines, Chat, Drafts, and Case Ops all mount
+into your tabs. Treat the shell's contract the way `queryKeys.ts` is treated: additive, stable,
+and never quietly reshaped.
+
+**Your backend half.** **Module 3 (Layer 3)** — the transactions, parties, and activity-log tables; the enforced status
+transition map; and **Layer 8G matter access**, which resolves against `assigned_attorney_id` and
+so cannot exist before this module does. That makes you the author of the product's primary
+access-control surface.
 
 ## Slice hard stops
-- **NEVER let quick-add exceed ten seconds, one-handed, on mobile.** That is the spec, not an aspiration. If it doesn't clear it, it isn't done.
-- **NEVER leave a phantom row.** Optimistic creates need a rollback path and a failure toast. An entry that appears and silently vanishes is worse than a slow one.
-- **NEVER apply optimism outside the four high-frequency creates.** Status transitions, deadline confirms, draft approvals, invoices: pending state, then revalidate. Optimism has a real cost.
-- **NEVER skip `activity(id)` invalidation.** Every transaction mutation feeds the activity feed.
+- **NEVER show a rejected transition as a bare failure.** The gate requires a *visible reason*.
+  `INVALID_STATUS_TRANSITION` returns which transitions are legal from here — render that. "Could
+  not update" teaches the attorney nothing and generates a support ticket.
+- **NEVER apply optimism to a status change.** This is the surface where it is most tempting and
+  most wrong: status is a legal state, and showing a transition the server may reject is worse
+  than a moment of pending.
+- **NEVER gate on `user.role` where the rule is assignment.** `role === 'ATTORNEY'` is not "the
+  attorney on this matter". Under 8G an unassigned attorney gets READ_ONLY and an unassigned
+  paralegal gets **nothing** — no read-only fallback. A role check grants both full access,
+  compiles cleanly, and reads as reasonable in review.
+- **NEVER apply `@MatterAccess` to most of your routes.** Five of six is the realistic failure, and
+  the sixth is usually a late-added GET. No bootstrap crash, no lint error. Enumerate the
+  controller's routes against the decorator list before calling it done.
+- **NEVER let the client compute or submit a transaction number.** `RE-2026-0001` is generated
+  server-side and unique per firm among non-deleted rows. A client-side guess collides.
+- **NEVER reshape the detail shell's tab contract without logging it.** Five agents render inside
+  it. A change there is a shared-file touch even when it lives in your own directory.
+- **NEVER skip `activity(id)`.** Every mutation on a transaction feeds the activity feed — it is
+  the institutional memory the whole product is arguing for.
 
 ## Triggers
-- IF a create is one of the four high-frequency ones → THEN optimistic with `rollbackOnError`, using SWR's built-ins rather than hand-rolling.
-- IF a create is anything else → THEN pending state, then revalidate.
-- IF an optimistic create fails → THEN roll back and toast. Never silently.
-- IF the morning dashboard renders → THEN it is a view, not an entity; it aggregates through other keys.
+- IF a status transition is rejected → THEN render the reason and the legal next states from
+  `error.details`, not a toast that says it failed.
+- IF you change the tab contract → THEN log it in `.team-5/shared/shared-file-touches.md` in the
+  same commit and say so in your completion report. Four branches depend on it.
+- IF any transaction mutation succeeds → THEN invalidate `activity(id)`, and `dashboard` too when
+  status, a deadline, or a task moved.
+- IF the pipeline renders → THEN compact density. It is scanned twenty times a day, not read.
+- IF a transaction reaches CLOSED or FALLEN_THROUGH → THEN prompt for the outcome reason. It is
+  unrecoverable after the fact — nobody reconstructs why a deal died six months later.
 - IF a Pattern Registry primitive you need does not exist → THEN the foundation gate has not passed. Stop and report. Do not build it yourself, and do not work around it.
 - IF the value you need has no token in globals.css → THEN it is not yet a token. Stop and report. Never inline a hex, px, or ms — an invented value is invisible in review because one hex looks as reasonable as another.
 
@@ -106,12 +138,14 @@ never apply to her.
   kebab-case. The pre-commit hook enforces it; treat it as a habit, not a hook you're fighting.
 
 ## Done when
-- Quick-add clears ten seconds one-handed on mobile — measured, not assumed.
-- All four optimistic creates roll back cleanly on failure with a toast.
-- Nothing outside the four uses optimism.
-- Every mutation invalidates `activity(id)`; deadline/task/status ones also invalidate `dashboard`.
-- **Your API E2E gate is green first:** Notes and communications appear newest-first and are immutable; a PURCHASE transaction populates its default checklist, and uploading a TITLE_COMMITMENT auto-flips that item to RECEIVED with the document linked; an invoiced time entry returns 422 `ENTRY_ALREADY_INVOICED` on edit; `GET /v1/dashboard` returns its four aggregates scoped to the requesting user.
+- Create → the transaction appears in the correct pipeline column, with its server-generated number.
+- An invalid transition is blocked with a reason a human can act on — not a generic error.
+- The detail shell's tabs are stable enough that another agent can mount into them without asking you.
+- All four states render on the pipeline and on the detail shell.
+- Every mutation writes an activity row, and the feed reflects it without a manual refresh.
+- **Your API E2E gate is green first:** Create → 201 with an auto transaction number; valid transition → 200; invalid → 422 `INVALID_STATUS_TRANSITION`; list excludes soft-deleted; every mutation writes an activity row; a terminal transition writes `closed_at`, `outcome_reason`, `cycle_time_days` and `retention_until`, and a close with no outcome reason is rejected.
 - Then your slice's Playwright gate is green. The module gate comes first — a browser
   gate over an unproven module reports UI failures for backend causes.
 
-The data this slice captures is what makes the firm dependent on the system. A call that's too annoying to log is a call that never happened — and the analytics built on top of it inherit the gap.
+Everything else in this product is a tab on a page you own. That is the whole job: be the part
+nobody has to think about, so five other people can.

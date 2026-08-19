@@ -40,6 +40,19 @@ CMD="$(printf '%s' "$PAYLOAD" | node -e '
 
 cd "$REPO_ROOT" || exit 0
 
+# ---------------------------------------------------------------------------
+# Backend checks — the silent failures (soft delete, matter access, role vs
+# assignment, forbidden paths). Lives in Node because the analysis is per-query
+# counting, not line matching. Exits 2 with its own report; we forward it.
+# ---------------------------------------------------------------------------
+BACKEND_OUTPUT="$(node "$REPO_ROOT/.claude/hooks/commit-checks.mjs" 2>&1)"
+BACKEND_STATUS=$?
+
+if [[ $BACKEND_STATUS -eq 2 ]]; then
+  printf '%s\n' "$BACKEND_OUTPUT" >&2
+  exit 2
+fi
+
 # Only check staged frontend component files.
 #
 # One pathspec, not two: git's `**/` requires a literal `/`, so

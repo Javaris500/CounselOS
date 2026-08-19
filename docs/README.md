@@ -32,7 +32,8 @@ counselos/
     ├── 15-project-context.md
     ├── 16-compliance-gaps.md
     ├── 17-ai-principles.md
-    └── 18-nestjs-conventions.md
+    ├── 18-nestjs-conventions.md
+    └── 19-commit-and-merge.md
 ```
 
 Numbering is deliberate — it gives the folder a reading order instead of alphabetical noise.
@@ -67,6 +68,7 @@ These are needed while writing code. Every one answers a question an engineer wi
 | 16 | `16-compliance-gaps.md` | — | TDPSA reality + the columns that must exist before the first migration |
 | 17 | `17-ai-principles.md` | — | Why the AI guardrails are shaped the way they are |
 | 18 | `18-nestjs-conventions.md` | — | **Framework decisions made once.** DI, validation stack, globals, scope, two-entrypoint wiring, test seams. Read before writing the first provider. |
+| 19 | `19-commit-and-merge.md` | — | **Who commits, who pushes, what the guard blocks.** The three silent failures no tool catches. Read before your first commit. |
 
 ---
 

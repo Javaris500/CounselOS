@@ -45,15 +45,19 @@ Listed → use it. Not listed → build it and register it in the same commit. N
 
 ## Slice coverage — what round 1 does and does not cover
 
-Five agents cover five slices. The rest are **deferred by design, not overlooked.**
+Six slice agents plus Nemi. The rest are **deferred by design, not overlooked.**
 
 | Slice | Status |
 |---|---|
 | 0 Foundation | **prerequisite** — operator, before any dispatch |
-| 2 Documents · 3 Deadlines · 4/7 Case ops · 5 Chat · 6 Drafts | round 1 — the five slice agents |
-| 1 Transactions pipeline | round 2 |
+| 1 Transactions | round 1 — **and a dependency**: the detail shell and its tab nav are what five other slices mount into, so this one lands first among the agents |
+| 2 Documents · 3 Deadlines · 4/7 Case ops · 5 Chat · 6 Drafts | round 1 |
 | 8 Leads · 9 Client portal · 11 Search / palette / import | round 2 |
 | 10 Wire fraud | round 2 — after Phase 1 core is E2E-green |
+
+**Transactions was originally round 2.** That was a sequencing error: Documents, Deadlines, Chat,
+Drafts, and Case Ops all render inside the transaction detail page, so deferring it would have left
+five agents building surfaces with no frame to mount into.
 
 Slice numbering follows `00-developer-guide.md` §7, which is also where each slice's Playwright
 gate is defined. (`01-codebase.md` Part 3 is the *module* order and its API E2E gates — a

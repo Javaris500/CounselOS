@@ -56,6 +56,35 @@ BLOCKED  8G      matter-level access guard                     [needs Auth]
 `SUPABASE_*` values, so Module 2 cannot be built and the Slice 0 gate — which is four clauses of
 auth behaviour — cannot run.
 
+## Dispatch order — decided 2026-08-18
+
+Agents are **full-stack** (Option C): each owns its NestJS module and its UI, built together and
+gated together. Four conditions came with that decision:
+
+1. **Stagger.** One agent runs dispatch-to-completion before any other starts. This is the first
+   time an agent writes backend code, and nobody yet knows what they get wrong with it — one
+   complete cycle tells us what to fix across the other agent files before six branches accumulate
+   the same mistake.
+2. **Transactions goes first**, not Documents. Documents is Module 4 and depends on Module 3, so it
+   cannot be first. Transactions is also the better teacher: no queue, no storage, no external APIs,
+   so a failure is a *process* failure rather than pipeline complexity. And it carries 8G, the
+   product's primary access-control surface — exactly what condition 3 exists for.
+3. **Every agent's FIRST backend module takes an adversarial security review before merge** — the
+   access-control section of `/review`, run in a fresh session. Structural violations already crash
+   the bootstrap or fail ESLint; this buys the category tooling cannot reach: a missing
+   `notDeleted`, a guard on five of six routes, a role check where the rule is assignment.
+   Subsequent modules from a cleared agent go through normal review.
+4. **Playwright must run before the first full-stack dispatch.** Under Option C every slice is gated
+   by a browser test, so a gate that cannot run turns "two gates" into one gate and an IOU — the
+   provisional-done problem we rejected Option B for.
+
+| order | agent | slice | module | blocked by |
+|---|---|---|---|---|
+| 1 | transactions | 1 | Module 3 + 8G | Playwright system libs |
+| 2 | documents | 2 | Module 4 | Module 3 |
+| 3 | drafts · case-ops | 6 · 4/7 | Module 7 · 8A–8D | Module 3 |
+| 4 | chat · deadlines | 5 · 3 | Module 5 · Module 6 + M1 | Module 4 |
+
 ## Queue
 
 | order | slice | agent | branch | status | playwright gate | merged |
