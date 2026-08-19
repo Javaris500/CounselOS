@@ -314,6 +314,19 @@ FALLEN_THROUGH   → (terminal — no exits)
 - [ ] `validateTransition(current, next)` utility function — throws `UnprocessableException` with `INVALID_STATUS_TRANSITION` error code if transition not in map
 - [ ] `validateTransition` called in `TransactionsService.updateStatus()` before any DB write
 - [ ] `closed_at` set automatically in `updateStatus()` when transitioning to CLOSED or FALLEN_THROUGH
+- [ ] **A terminal transition writes FIVE columns, not one** — corrected 2026-08-18. This section
+  previously named only `closed_at`, and an agent building `updateStatus()` from it would silently
+  drop the rest. Nothing fails: no test breaks, no lint fires, the transition works. The loss
+  surfaces months later as a null column on every closed matter.
+  - `closed_at`
+  - `outcome_reason` — **prompted by the transition**, one dropdown at the moment the attorney
+    actually knows the answer. **UNRECOVERABLE** if not captured then (`16-compliance-gaps.md` §2.3)
+  - `outcome_notes` — optional, max 500 chars at the Zod pipe
+  - `cycle_time_days` — computed `effective_date` → `closed_at`, stored rather than derived so
+    cycle-time analysis stays a simple aggregate
+  - `retention_until` — `closed_at` + 7 years. Texas real estate matters require 7-year retention
+- [ ] The module's E2E gate asserts all five, and that a close with no `outcome_reason` is rejected
+- [ ] **`schema.ts` and its comments are the source of truth here** — they postdate this section
 - [ ] Status transition logged to activity log automatically in `updateStatus()` — never relies on caller to log it
 
 ### 3D — Activity Log Entity

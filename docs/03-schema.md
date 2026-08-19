@@ -2023,21 +2023,19 @@ The following tables will be added in Phase 2 migrations when expanding to PI fi
 
 ## Soft Delete Query Pattern
 
-The soft-delete middleware from Prisma does not exist in Drizzle. Every repository list method must explicitly include the soft delete filter. Don't rely on remembering it: repositories extend a base class whose list methods apply `notDeleted` by default, and any hand-written `where` in a list query is a review item. See `18-nestjs-conventions.md` §5.
+The soft-delete middleware from Prisma does not exist in Drizzle, and there is no base class that supplies the filter for you. Every list method includes it explicitly, every time. Don't rely on remembering it — the pre-commit guard counts filtered selects against total selects, per table, and blocks the commit when they disagree. See `18-nestjs-conventions.md` §5 and `19-commit-and-merge.md` §2.1.
 
 ```typescript
-// src/database/helpers.ts
+// apps/api/src/database/helpers.ts — the live file, not a sketch
 import { isNull } from 'drizzle-orm'
-import { transactions, documents, deadlines, drafts, leads } from './schema'
+import type { SQL } from 'drizzle-orm'
+import { transactions, documents, /* ...11 more */ } from './schema'
 
-// Use this in every list query on soft-deleteable tables
 export const notDeleted = {
   transactions: isNull(transactions.deletedAt),
   documents:    isNull(documents.deletedAt),
-  deadlines:    isNull(deadlines.deletedAt),
-  drafts:       isNull(drafts.deletedAt),
-  leads:        isNull(leads.deletedAt),
-}
+  // ...one entry per table carrying deleted_at — 13 of them
+} as const satisfies Record<string, SQL>
 
 // Usage in a repository:
 // const result = await db
@@ -2045,6 +2043,16 @@ export const notDeleted = {
 //   .from(transactions)
 //   .where(and(eq(transactions.firmId, firmId), notDeleted.transactions))
 ```
+
+**Thirteen tables carry `deleted_at`**, not the five an earlier draft of this section listed:
+`transactions`, `documents`, `deadlines`, `drafts`, `leads`, `matter_notes`, `communications`,
+`document_checklist_items`, `tasks`, `time_entries`, `invoices`, `verified_wire_instructions`,
+`client_messages`. `helpers.spec.ts` derives that list from `schema.ts` and fails if the map drifts
+in either direction, so the count above can go stale but the code cannot.
+
+**Always use the helper; never hand-write `isNull(x.deletedAt)`.** The pre-commit guard counts
+`notDeleted.<table>` against `.from(<table>)` per table, so a hand-written filter reads as a missing
+one. See `19-commit-and-merge.md`.
 
 ---
 

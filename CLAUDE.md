@@ -219,6 +219,7 @@ Docs are in `docs/`, numbered for reading order. **Don't load everything — sev
 | Why a module exists / NestJS vocabulary | `14-module-notes.md` |
 | **Any NestJS wiring** — a module, provider, guard, pipe, filter, the worker, a test seam | `18-nestjs-conventions.md` |
 | Columns that can't be backfilled later, TDPSA | `16-compliance-gaps.md` |
+| **Committing, what the guard blocks, the merge flow** | `19-commit-and-merge.md` |
 | Product/market framing, Phase 2 boundary | `15-project-context.md`, `17-ai-principles.md` |
 
 `memory/` is a sibling of `docs/`, not part of it: `Instructions.md` (how to work on this project), `Context.md` (what the project is and what's decided), `Memory.md` (running log of preferences and decisions).
@@ -257,7 +258,13 @@ The docs are a spec set written over time and they contain known drift. Resoluti
 
 ## Git & PR Conventions
 
-- **The user runs `git commit` and `git push` themselves.** Stage changes and suggest a commit message; don't commit or push unless explicitly asked in that message.
+- **The user runs `git commit` and `git push` themselves.** Stage changes and suggest a commit
+  message; don't commit or push unless explicitly asked in that message.
+- **Agents in worktrees are the exception, and only for `commit`.** An agent commits on its own
+  branch as it works — that is what makes the `data-testid`/shared-file-log/registry "same commit"
+  rules mean anything. **No agent ever pushes, opens a PR, or merges.** A commit is local and
+  reversible; a push is a claim of doneness, and that claim is the operator's after the gates pass.
+  Full flow and the four things an agent may never commit: `docs/19-commit-and-merge.md`.
 - **Branches:** `slice-1/transaction-status-transitions`, `fix/deadline-urgency-boundary`.
 - **Commits:** conventional — `feat(deadlines): add TREC business-day calculator`.
 - **Every PR passes** lint, typecheck, and the full suite in CI before merge.
