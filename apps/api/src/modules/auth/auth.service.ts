@@ -1,11 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type Redis from 'ioredis';
 import { ERROR_CODES, type AuthUser, type LoginResponse } from '@counselos/shared';
 
 import { TooManyRequestsException, UnauthorizedException } from '../../common/errors/app.exception';
 import { REDIS } from '../../redis/redis.module';
-import { SUPABASE_ADMIN, SUPABASE_PUBLIC } from './supabase.provider';
+import { SUPABASE_AUTH, type SupabaseAuthApi } from './supabase.provider';
 import { AuthRepository, type UserRow } from './auth.repository';
 import type { SupabaseClaims } from './token-verifier';
 
@@ -36,8 +35,7 @@ export class AuthService {
   constructor(
     private readonly repository: AuthRepository,
     @Inject(REDIS) private readonly redis: Redis,
-    @Inject(SUPABASE_PUBLIC) private readonly publicClient: SupabaseClient,
-    @Inject(SUPABASE_ADMIN) private readonly adminClient: SupabaseClient,
+    @Inject(SUPABASE_AUTH) private readonly supabaseAuth: SupabaseAuthApi,
   ) {}
 
   /**
@@ -119,9 +117,9 @@ export class AuthService {
   async login(email: string, password: string, ip: string): Promise<AuthSession> {
     await this.assertNotThrottled(email, ip);
 
-    const { data, error } = await this.publicClient.auth.signInWithPassword({ email, password });
+    const session = await this.supabaseAuth.signInWithPassword(email, password);
 
-    if (error !== null || data.session === null) {
+    if (session === null) {
       await this.recordFailure(email, ip);
       // Guards throw before interceptors run, so a failed sign-in produces no
       // HTTP log line. Without this, a brute-force attempt is invisible.
@@ -131,34 +129,35 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password.', ERROR_CODES.UNAUTHORIZED);
     }
 
-    const user = await this.hydrate({ sub: data.session.user.id, email });
+    const user = await this.hydrate({ sub: session.userId, email });
     await this.clearFailures(email, ip);
 
     return {
-      accessToken: data.session.access_token,
-      refreshToken: data.session.refresh_token,
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
       user,
     };
   }
 
+  /**
+   * Rotates the presented refresh token, and ONLY the presented one.
+   *
+   * SupabaseAuthApi holds no session between calls, which is what makes that
+   * true. The previous implementation went through a shared supabase-js client
+   * whose stored session belonged to whoever logged in last, so a refresh here
+   * could consume a different user's token — SURPRISES.md 001.
+   */
   async refresh(refreshToken: string): Promise<AuthSession> {
-    const { data, error } = await this.publicClient.auth.refreshSession({
-      refresh_token: refreshToken,
-    });
+    const session = await this.supabaseAuth.refresh(refreshToken);
 
-    if (error !== null || data.session === null) {
-      throw new UnauthorizedException('Session expired.', ERROR_CODES.UNAUTHORIZED);
-    }
-
-    const email = data.session.user.email;
-    if (email === undefined) {
+    if (session === null || session.email === undefined) {
       throw new UnauthorizedException('Session expired.', ERROR_CODES.UNAUTHORIZED);
     }
 
     return {
-      accessToken: data.session.access_token,
-      refreshToken: data.session.refresh_token,
-      user: await this.hydrate({ sub: data.session.user.id, email }),
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+      user: await this.hydrate({ sub: session.userId, email: session.email }),
     };
   }
 
@@ -173,11 +172,7 @@ export class AuthService {
    */
   async logout(refreshToken: string | undefined): Promise<void> {
     if (refreshToken === undefined || refreshToken === '') return;
-    try {
-      await this.adminClient.auth.admin.signOut(refreshToken);
-    } catch {
-      this.logger.warn('Supabase sign-out failed; cookie cleared regardless.');
-    }
+    await this.supabaseAuth.signOut(refreshToken);
   }
 
   toLoginResponse(session: AuthSession): LoginResponse {

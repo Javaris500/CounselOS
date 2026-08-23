@@ -37,7 +37,7 @@ You do not read all 19 docs. You read what your task needs. Here's the map:
 | Frontend visual design | `07-design-handoff.md` + `design-system-v5.html` |
 | The build checklist to work through | `05-backend-checklist.md` |
 
-**Rule of thumb:** the checklist is your task list, `FullBackend.md` is your reference, the schema is your source of truth for data. When they disagree, the schema wins for data shape and the checklist wins for behavior — and you flag the drift.
+**Rule of thumb:** the checklist is your task list, `04-data-contracts.md` is your reference, the schema is your source of truth for data. When they disagree, the schema wins for data shape and the checklist wins for behavior — and you flag the drift.
 
 ---
 

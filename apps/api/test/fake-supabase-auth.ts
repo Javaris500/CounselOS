@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 import { SignJWT, exportJWK, generateKeyPair, type JWK } from 'jose';
 
@@ -75,7 +76,17 @@ async function main(): Promise<void> {
       .setExpirationTime(now + accessTokenTtlSeconds)
       .sign(privateKey);
 
-    const refreshToken = `refresh-${sub}-${String(now)}`;
+    /**
+     * A UUID, not `${sub}-${now}`.
+     *
+     * `now` is whole seconds, so two logins for the same account inside one
+     * second minted an IDENTICAL refresh token — and since refresh rotates by
+     * DELETING the presented token, the second login silently invalidated the
+     * first. That is a harness bug that reads exactly like an auth bug, which
+     * is the worst kind to have underneath a gate whose job is finding auth
+     * bugs.
+     */
+    const refreshToken = `refresh-${sub}-${randomUUID()}`;
     sessions.set(refreshToken, email);
 
     return {

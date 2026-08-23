@@ -4,7 +4,7 @@ import { createRemoteJWKSet, type JWTVerifyGetKey } from 'jose';
 
 /**
  * The key source — the ONLY externality in the auth path, and therefore the
- * only thing an E2E overrides (18 §285: override true externals, never our own
+ * only thing an E2E overrides (18 §10: override true externals, never our own
  * code).
  *
  * Typed as jose's own resolver signature, which is what makes the seam work:
