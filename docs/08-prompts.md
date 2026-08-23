@@ -209,7 +209,7 @@ Extract all deadlines from this document and return them as structured JSON.`
 }
 ```
 
-**Testing against fixtures (from TestData.md):**
+**Testing against fixtures (from `11-test-data.md`):**
 - Transaction 1 (Rodriguez v. State Farm) purchase agreement → must extract OPTION_PERIOD_EXPIRY (June 9), FINANCING_CONTINGENCY (June 23), CLOSING_DATE (July 2)
 - Transaction 2 Amendment 1 → must extract CLOSING_DATE (July 10), must NOT re-extract the original CLOSING_DATE
 - Document with only historical dates → must return empty array

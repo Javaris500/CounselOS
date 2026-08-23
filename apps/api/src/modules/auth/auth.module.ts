@@ -9,11 +9,11 @@ import { AuthController } from './auth.controller';
 import { AuthRepository } from './auth.repository';
 import { AuthService } from './auth.service';
 import { jwksProvider } from './jwks.provider';
-import { supabaseAdminProvider, supabasePublicProvider } from './supabase.provider';
+import { supabaseAuthProvider } from './supabase.provider';
 import { TokenVerifier } from './token-verifier';
 
 /**
- * Owns authentication, and the only two Supabase clients in the codebase
+ * Owns authentication, and the only Supabase Auth caller in the codebase
  * (CLAUDE.md:101 — the service key is scoped to Auth and Storage).
  *
  * The global guards are registered HERE rather than in AppModule so their
@@ -34,8 +34,7 @@ import { TokenVerifier } from './token-verifier';
     TokenVerifier,
     Clock,
     jwksProvider,
-    supabasePublicProvider,
-    supabaseAdminProvider,
+    supabaseAuthProvider,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],

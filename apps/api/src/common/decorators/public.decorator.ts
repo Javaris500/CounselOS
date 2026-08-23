@@ -1,7 +1,7 @@
 import { SetMetadata } from '@nestjs/common';
 
 /**
- * The ONLY auth escape hatch (18 §128). Everything is protected by default —
+ * The ONLY auth escape hatch (18 §3). Everything is protected by default —
  * a route is reachable unauthenticated because someone said so here, never
  * because they forgot to add a guard.
  *

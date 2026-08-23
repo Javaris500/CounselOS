@@ -11,7 +11,7 @@ import { PG_CLIENT_OPTIONS } from '../../database/database.module';
 import { SEED_IDS } from '../../database/seed';
 import { AuthService } from './auth.service';
 import { JWKS } from './jwks.provider';
-import { SUPABASE_ADMIN, SUPABASE_PUBLIC } from './supabase.provider';
+import { SUPABASE_AUTH, type GrantResult } from './supabase.provider';
 
 /**
  * MODULE 2 — THE E2E GATE (01-codebase.md Part 3).
@@ -22,7 +22,7 @@ import { SUPABASE_ADMIN, SUPABASE_PUBLIC } from './supabase.provider';
  * Written before the implementation, because it is the spec.
  *
  * WHAT IS OVERRIDDEN: only `JWKS`, the key source — Supabase Auth's HTTP
- * surface, which is a true external (18 §285). Not the guard, not the verifier,
+ * surface, which is a true external (18 §10). Not the guard, not the verifier,
  * not the service, repository, Redis, or Postgres. So everything below exercises
  * real signature, algorithm, issuer, audience, and expiry checking. The forgery
  * cases exist to prove that is actually true rather than assumed.
@@ -37,44 +37,38 @@ describe('Module 2 — auth (e2e)', () => {
   const GOOD_PASSWORD = 'correct-horse-battery-staple';
 
   /**
-   * Stands in for Supabase Auth's HTTP surface — the true external (18 §285).
+   * Stands in for Supabase Auth's HTTP surface — the true external (18 §10).
    * Only the three calls AuthService makes. Everything downstream of it, from
    * hydration to the cookie, is the real implementation.
+   *
+   * `null` is a REJECTED credential, never an outage — SupabaseAuthApi throws
+   * for the latter so a Supabase failure can never reach a user as a wrong
+   * password.
    */
-  const fakeSupabase = {
-    auth: {
-      signInWithPassword: ({ email, password }: { email: string; password: string }) =>
-        Promise.resolve(
-          password === GOOD_PASSWORD
-            ? {
-                data: {
-                  session: {
-                    access_token: 'supabase-access-token',
-                    refresh_token: 'supabase-refresh-token',
-                    user: { id: SEED_IDS.authIds.attorney, email },
-                  },
-                },
-                error: null,
-              }
-            : { data: { session: null }, error: { message: 'Invalid login credentials' } },
-        ),
-      refreshSession: ({ refresh_token }: { refresh_token: string }) =>
-        Promise.resolve(
-          refresh_token === 'supabase-refresh-token'
-            ? {
-                data: {
-                  session: {
-                    access_token: 'rotated-access-token',
-                    refresh_token: 'rotated-refresh-token',
-                    user: { id: SEED_IDS.authIds.attorney, email: ATTORNEY_EMAIL },
-                  },
-                },
-                error: null,
-              }
-            : { data: { session: null }, error: { message: 'Invalid refresh token' } },
-        ),
-      admin: { signOut: () => Promise.resolve({ error: null }) },
-    },
+  const fakeSupabaseAuth = {
+    signInWithPassword: (email: string, password: string): Promise<GrantResult> =>
+      Promise.resolve(
+        password === GOOD_PASSWORD
+          ? {
+              accessToken: 'supabase-access-token',
+              refreshToken: 'supabase-refresh-token',
+              userId: SEED_IDS.authIds.attorney,
+              email,
+            }
+          : null,
+      ),
+    refresh: (refreshToken: string): Promise<GrantResult> =>
+      Promise.resolve(
+        refreshToken === 'supabase-refresh-token'
+          ? {
+              accessToken: 'rotated-access-token',
+              refreshToken: 'rotated-refresh-token',
+              userId: SEED_IDS.authIds.attorney,
+              email: ATTORNEY_EMAIL,
+            }
+          : null,
+      ),
+    signOut: (): Promise<void> => Promise.resolve(),
   };
 
   beforeAll(async () => {
@@ -95,10 +89,8 @@ describe('Module 2 — auth (e2e)', () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(JWKS)
       .useValue(keyring.jwks)
-      .overrideProvider(SUPABASE_PUBLIC)
-      .useValue(fakeSupabase)
-      .overrideProvider(SUPABASE_ADMIN)
-      .useValue(fakeSupabase)
+      .overrideProvider(SUPABASE_AUTH)
+      .useValue(fakeSupabaseAuth)
       .compile();
 
     app = moduleRef.createNestApplication();
