@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { ERROR_CODES, type AuthUser } from '@counselos/shared';
+import { ERROR_CODES, STAFF_ROLES, type AuthUser, type UserRole } from '@counselos/shared';
 
 import { Clock } from '../../common/clock';
 import { AppException, NotFoundException } from '../../common/errors/app.exception';
@@ -105,6 +105,28 @@ export class MatterAccessService {
 
   /** The ladder itself. Pure — no I/O, so it unit-tests at every rung. */
   resolve(user: AuthUser, context: MatterAccessContext): AccessDecision {
+    /**
+     * RUNG 0 — THE FLOOR. A non-staff account holds no matter access at any
+     * level, whatever the assignment columns or a grant row say.
+     *
+     * Rungs 2, 3 and 4 match on an id or on the existence of a row, and none of
+     * them looks at `role` — correctly, because the whole point of 8G is that
+     * assignment beats job title. But that cuts both ways: without this floor,
+     * writing a CLIENT's id into `assigned_attorney_id`, or granting one a
+     * `matter_access` row, yields FULL. A portal client could then change a
+     * legal status, edit parties, and grant access to others.
+     *
+     * 13 §1 gives CLIENT "one transaction, read-only + messaging, via signed
+     * token, not an account" — never FULL, and never through this path at all.
+     * The entry points refuse to write such a row (assertActiveFirmMember), and
+     * this refuses to honour one that exists anyway. Two layers, because the
+     * row could predate the check or arrive from a CSV import.
+     *
+     * Not annotated `commit-check-exempt`: the guard does not flag this shape,
+     * and tagging a line the guard is silent on would imply a silenced warning.
+     */
+    if (!isStaffRole(user.role)) return { granted: false, reason: 'ROLE_INSUFFICIENT' };
+
     // 1. OWNER bypasses matter checks. Firm settings, user management, all
     //    matters (13 §1) — there is no matter in their own firm they may not
     //    open, so this is genuinely a firm-wide role rule and nothing else.
@@ -141,9 +163,10 @@ export class MatterAccessService {
     //    All three branches DENY; the role only picks which explanation is true.
     if (grantExpired) return { granted: false, reason: 'ACCESS_EXPIRED' };
 
-    const reason: DenialReason =
-      user.role === 'PARALEGAL' ? 'NOT_ASSIGNED' : 'ROLE_INSUFFICIENT'; // commit-check-exempt: 8G step 6 — chooses the denial MESSAGE only; access is already refused on every branch
-    return { granted: false, reason };
+    // Only a PARALEGAL reaches here: OWNER and ATTORNEY returned above, and a
+    // non-staff role was refused at the floor. Kept as the explicit answer for
+    // the one role that arrives.
+    return { granted: false, reason: 'NOT_ASSIGNED' };
   }
 
   /**
@@ -208,6 +231,16 @@ export class MatterAccessService {
       // because the caller can already see the firm roster.
       throw new NotFoundException('That colleague is not an active member of this firm.');
     }
+    /**
+     * A portal client is not a colleague. Assigning a matter to one, or
+     * granting one access, would write a row that `resolve()` now refuses to
+     * honour — so this is the same rule enforced where the mistake is made,
+     * while the operator is still looking at it, rather than as a denial
+     * somebody debugs later.
+     */
+    if (!isStaffRole(member.role)) {
+      throw new NotFoundException('That colleague is not an active member of this firm.');
+    }
     return member;
   }
 
@@ -269,3 +302,13 @@ export class MatterAccessService {
     return this.listGrants(context.transactionId);
   }
 }
+
+/**
+ * Everyone who logs into the attorney product (`STAFF_ROLES`, packages/shared).
+ *
+ * A role comparison, and a legitimate one: this is the firm-wide question "is
+ * this an internal account at all", which is genuinely about job title and is
+ * asked BEFORE the assignment rules rather than instead of them.
+ */
+const isStaffRole = (role: UserRole): boolean =>
+  (STAFF_ROLES as readonly UserRole[]).includes(role);

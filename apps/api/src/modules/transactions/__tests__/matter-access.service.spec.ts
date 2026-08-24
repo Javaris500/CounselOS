@@ -53,6 +53,62 @@ describe('MatterAccessService.resolve — 8G', () => {
     ...overrides,
   });
 
+  describe('rung 0 — the floor', () => {
+    /**
+     * ─────────────────────────────────────────────────────────────────────────
+     * WHY THESE THREE AND NOT THE UNASSIGNED-CLIENT CASE IN RUNG 6.
+     *
+     * That one passed before the floor existed and passes after it — a CLIENT
+     * with no assignment and no grant was already refused by the fall-through.
+     * It cannot fail if the floor is deleted, so it does not test the floor.
+     *
+     * Rungs 2, 3 and 4 match on an id or on the existence of a row and never
+     * look at `role`. So the only cases that exercise the floor are the ones
+     * where a non-staff account WINS one of those matches — which is exactly
+     * the state a bad CSV import or a mis-typed assignment produces.
+     * ─────────────────────────────────────────────────────────────────────────
+     */
+    it('a CLIENT sitting in assigned_attorney_id is still refused', () => {
+      // Without the floor this returns FULL: rung 2 matches on the id alone.
+      const decision = service.resolve(
+        user('CLIENT'),
+        matter({ assignedAttorneyId: OTHER_ID }),
+      );
+      expect(decision).toEqual({ granted: false, reason: 'ROLE_INSUFFICIENT' });
+      expect(decision).not.toHaveProperty('level');
+    });
+
+    it('a CLIENT sitting in assigned_paralegal_id is still refused', () => {
+      const decision = service.resolve(
+        user('CLIENT'),
+        matter({ assignedParalegalId: OTHER_ID }),
+      );
+      expect(decision).toEqual({ granted: false, reason: 'ROLE_INSUFFICIENT' });
+      expect(decision).not.toHaveProperty('level');
+    });
+
+    it('a CLIENT holding a live matter_access grant is still refused', () => {
+      // Without the floor this returns a granted level: rung 4 matches on the
+      // existence of the row, and the row here has not expired.
+      const decision = service.resolve(
+        user('CLIENT'),
+        matter({ grant: { expiresAt: null } }),
+      );
+      expect(decision).toEqual({ granted: false, reason: 'ROLE_INSUFFICIENT' });
+      expect(decision).not.toHaveProperty('level');
+    });
+
+    it('the floor is checked before the expiry branch — a CLIENT never gets ACCESS_EXPIRED', () => {
+      // The reason matters: ACCESS_EXPIRED tells the reader "this was legitimate
+      // once, renew it". For a portal client it never was.
+      const expired = matter({ grant: { expiresAt: new Date('2026-06-01T00:00:00Z') } });
+      expect(service.resolve(user('CLIENT'), expired)).toEqual({
+        granted: false,
+        reason: 'ROLE_INSUFFICIENT',
+      });
+    });
+  });
+
   describe('rung 1 — OWNER', () => {
     it('gets FULL on a matter they are not assigned to', () => {
       expect(service.resolve(user('OWNER'), matter())).toEqual({ granted: true, level: 'FULL' });

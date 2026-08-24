@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { aliasedTable, and, asc, eq } from 'drizzle-orm';
+import type { UserRole } from '@counselos/shared';
 
 import { DRIZZLE, type DrizzleDb } from '../../database/database.module';
 import { notDeleted } from '../../database/helpers';
@@ -144,9 +145,19 @@ export class MatterAccessRepository {
   async findFirmUser(
     firmId: string,
     userId: string,
-  ): Promise<{ id: string; fullName: string; isActive: boolean } | undefined> {
+  ): Promise<
+    { id: string; fullName: string; isActive: boolean; role: UserRole } | undefined
+  > {
     const [row] = await this.db
-      .select({ id: users.id, fullName: users.fullName, isActive: users.isActive })
+      // `role` is selected because the caller has to refuse a portal client as
+      // an assignee or grantee. Without it the check cannot be written, which
+      // is how it came to be missing in the first place.
+      .select({
+        id: users.id,
+        fullName: users.fullName,
+        isActive: users.isActive,
+        role: users.role,
+      })
       .from(users)
       .where(and(eq(users.firmId, firmId), eq(users.id, userId)))
       .limit(1);
