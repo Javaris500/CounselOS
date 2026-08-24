@@ -9,6 +9,10 @@
 
 | # | date | agent | slice | blocker | escalated_to | resolution | status |
 |---|---|---|---|---|---|---|---|
+| 1 | 2026-08-23 | transactions | 1 | `app.module.ts` is outside the dispatch boundary, but a NestJS module is unreachable without an entry in its `imports` — no routes, so the API E2E gate could not run at all | operator | boundary amended: `apps/api/src/app.module.ts` added to `may_append_only`; 2 lines added, 0 removed. **The dispatch file itself still needs that line or `check-mounts.sh` will flag it** | closed |
+| 2 | 2026-08-23 | transactions | 1 | `packages/shared` is Foundations', so the create form's Zod schema cannot live there — `06-frontend-architecture.md` Part 11 requires ONE schema validating in both the browser and the Zod pipe | operator | duplicated visibly in `components/features/transactions/create-transaction.schema.ts` with a header saying so; server 422 + `applyServerErrors` remains the real gate. Hoist to `packages/shared/src/schemas/transaction.schema.ts` and delete the local copy | open |
+| 3 | 2026-08-23 | transactions | 1 | Same cause: the `Transaction`/`Party`/`ActivityEntry` response types cannot go in `packages/shared` | operator | declared in `components/features/transactions/transaction.types.ts`; the ENUMS are still imported from `packages/shared`, so values cannot drift even while the envelope is local. Hoist to `packages/shared/src/types/transaction.ts` | open |
+| 4 | 2026-08-23 | transactions | 1 | `FIELD_LIMITS` has no `OUTCOME_NOTES` entry, and `05-backend-checklist.md` §3C caps `outcome_notes` at 500 chars | operator | `OUTCOME_NOTES_MAX = 500` exported from `dto/update-status.dto.ts`. Belongs in `packages/shared/src/constants/limits.ts` beside `COMMUNICATION_SUMMARY` | open |
 
 ## Rules
 
