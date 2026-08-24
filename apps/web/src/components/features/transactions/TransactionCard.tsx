@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import type { Transaction } from '@counselos/shared';
 
 import { Badge } from '@/components/ui';
 
@@ -12,7 +13,6 @@ import {
   formatDate,
   formatMoney,
 } from './status-ladder';
-import type { Transaction } from './transaction.types';
 
 /**
  * One matter on the pipeline board.

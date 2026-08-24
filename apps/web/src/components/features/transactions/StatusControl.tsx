@@ -1,17 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { OUTCOME_REASONS, type TransactionStatus } from '@counselos/shared';
+import {
+  FIELD_LIMITS,
+  OUTCOME_REASONS,
+  type TransactionDetail,
+  type TransactionStatus,
+} from '@counselos/shared';
 
 import { Badge, Button, Dialog, Field, Select, useToast } from '@/components/ui';
 import { ApiError } from '@/lib/api/client';
 import { updateTransactionStatus } from '@/lib/api/mutations';
 
 import { OUTCOME_LABELS, STATUS_LABELS, STATUS_TONES } from './status-ladder';
-import type { TransactionDetail } from './transaction.types';
 import styles from './StatusControl.module.css';
 
-const OUTCOME_NOTES_MAX = 500;
 
 /**
  * Moving a matter along the ladder.
@@ -211,12 +214,12 @@ export function StatusControl({
         <Field
           label="Notes"
           htmlFor="outcomeNotes"
-          hint={`Optional. ${String(OUTCOME_NOTES_MAX - outcomeNotes.length)} characters left.`}
+          hint={`Optional. ${String(FIELD_LIMITS.OUTCOME_NOTES - outcomeNotes.length)} characters left.`}
         >
           <textarea
             id="outcomeNotes"
             className={styles.textarea}
-            maxLength={OUTCOME_NOTES_MAX}
+            maxLength={FIELD_LIMITS.OUTCOME_NOTES}
             rows={3}
             value={outcomeNotes}
             onChange={(event) => setOutcomeNotes(event.target.value)}
