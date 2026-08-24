@@ -37,6 +37,8 @@ export function ActivityFeed({ transactionId }: { transactionId: string }): Reac
     return (
       <ErrorState
         code={error instanceof ApiError ? error.code : undefined}
+        message={error instanceof ApiError ? error.message : undefined}
+        details={error instanceof ApiError ? error.details : undefined}
         requestId={error instanceof ApiError ? error.requestId : undefined}
       />
     );
