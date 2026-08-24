@@ -116,26 +116,33 @@ export class MatterAccessService {
     if (context.assignedParalegalId === user.id) return { granted: true, level: 'FULL' };
 
     // 4. An explicit grant — vacation coverage, second-chairing, reassignment.
-    if (context.grant !== null) {
-      const { expiresAt } = context.grant;
-      if (expiresAt === null || expiresAt.getTime() > this.clock.timestamp()) {
-        return { granted: true, level: 'FULL' };
-      }
-      // A lapsed grant is a DIFFERENT answer from never having had one: the
-      // UI can offer "ask for it again" instead of "you were never on this".
-      return { granted: false, reason: 'ACCESS_EXPIRED' };
-    }
+    //
+    // The rung is "a row exists AND IS NOT EXPIRED". An expired row therefore
+    // does not match it, and evaluation CONTINUES to rung 5 rather than
+    // stopping here — otherwise an attorney whose coverage grant lapsed would
+    // be denied the read-only cover every other attorney at the firm has,
+    // which is stricter than 13 §1 and arbitrary: the lapse of an extra
+    // permission must not remove a baseline one.
+    const grantExpired =
+      context.grant !== null &&
+      context.grant.expiresAt !== null &&
+      context.grant.expiresAt.getTime() <= this.clock.timestamp();
+
+    if (context.grant !== null && !grantExpired) return { granted: true, level: 'FULL' };
 
     // 5. Read-only cover for other attorneys at the firm. A PARALEGAL never
     //    reaches this rung — the absence of a fallback for them IS the rule
     //    (13 §1: "No visibility into unassigned matters").
     if (user.role === 'ATTORNEY') return { granted: true, level: 'READ_ONLY' }; // commit-check-exempt: 8G step 5 — READ_ONLY cover is defined by role; note it grants READ_ONLY, never FULL, and a PARALEGAL deliberately reaches no such rung
 
-    // 6. Denied. A CLIENT reaching an attorney route is a different failure
-    //    from a paralegal on someone else's matter, and the UI says so.
-    // Both branches DENY. The role only picks which explanation is true.
+    // 6. Denied — and the reason is the most specific true one, because the UI
+    //    renders a different offer for each. A lapsed grant means "ask for it
+    //    again"; never having had one means "you were never on this matter".
+    //    All three branches DENY; the role only picks which explanation is true.
+    if (grantExpired) return { granted: false, reason: 'ACCESS_EXPIRED' };
+
     const reason: DenialReason =
-      user.role === 'PARALEGAL' ? 'NOT_ASSIGNED' : 'ROLE_INSUFFICIENT'; // commit-check-exempt: 8G step 6 — chooses the denial MESSAGE only; access is already refused on both branches
+      user.role === 'PARALEGAL' ? 'NOT_ASSIGNED' : 'ROLE_INSUFFICIENT'; // commit-check-exempt: 8G step 6 — chooses the denial MESSAGE only; access is already refused on every branch
     return { granted: false, reason };
   }
 
