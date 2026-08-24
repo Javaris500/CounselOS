@@ -8,11 +8,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current State of This Repo
 
-**The workspace is scaffolded and verified** (2026-08-15). `pnpm install` / `lint` / `typecheck` / `build` all pass, and `GET /v1/health` returns `{"status":"ok"}` against a live boot. What exists: pnpm catalog + turbo, `packages/config`, `packages/shared` (9 enum files, error codes, SSE events, limits), `apps/api` (CoreModule / AppModule / WorkerModule, both entrypoints, the `DRIZZLE` token, env validation, health module, 3-project jest config), `apps/web` (Next shell).
+**Slices 0 and 1 are merged and green** (2026-08-24). Every gate passes on `main`, verified on a forced run rather than a turbo cache replay: lint · typecheck · **61 unit · 41 integration · 88 API E2E · 48 Playwright**.
 
-**`apps/api/src/database/schema.ts` currently contains enums only — no tables.** This is deliberate. Tables land in one pass, reading `docs/03-schema.md` alongside `docs/16-compliance-gaps.md`, because the columns that can't be honestly backfilled must exist in the first migration. **Do not add tables piecemeal as modules need them.** This is the next task before any module work.
+**What is real now.** `packages/config`, `packages/shared` (9 enum files, error codes, SSE events, limits, shared Zod schemas and response types). `apps/api`: CoreModule / AppModule / WorkerModule, both entrypoints, the `DRIZZLE` token, env validation, the error envelope, Redis wiring, **Module 2 (Auth — ES256/JWKS, guards, login proxy, rotating httpOnly refresh cookie)** and **Module 3 (Transactions) + Layer 8G matter access**. `apps/web`: Design System v5 tokens, all 12 registry primitives, `apiFetch` with single-flight refresh, both Zustand stores, MSW handlers, route groups, and the transactions pipeline board / detail shell / status control. Supabase is **provisioned** in `us-east-1`.
 
-**Not yet real:** the Supabase project (placeholder `SUPABASE_*` values in `apps/api/.env`) and every external API key. Nothing in Module 1 needs them; Module 2 (Auth) does.
+**`schema.ts` holds all 27 tables**, landed in one pass against `03-schema.md` + `16-compliance-gaps.md`, with four migrations applied (`0000`–`0003`, the last enabling RLS on every table). The one-pass rule stands for any future table: **do not add tables piecemeal as modules need them.**
+
+**Next up: slice 2 (documents, Module 4)** — see `.team-5/status/merge-queue.md` for the queue and the conditions attached to a first backend module.
+
+**Not yet real:** every external API key (Anthropic, Voyage, Resend). `blankAsUnset()` means a blank optional key is *off*, not *broken*.
 
 Practical consequence, still in force: **never claim a file, table, endpoint, or command exists because this doc or a spec doc mentions it.** Check the filesystem. The docs describe the target design, not the current tree.
 
@@ -89,7 +93,7 @@ These implement Texas State Bar Opinion 705. Full detail in `docs/09-legal-compl
 - **Chat returns the deterministic fallback when no chunks clear the 0.70 similarity threshold.** Never call Claude with empty context and let it guess — a confident wrong answer is a malpractice risk.
 - **Never fake a working integration.** `not_configured` is a first-class state for any external dependency (Anthropic, Voyage, Resend, storage), never disguised as an error or as working. Never render a spinner for a service known to be down — render a disabled state with a plain explanation. Partial outages never block the whole app. A blank optional key in `.env` means *off*, not *broken* — `blankAsUnset()` in `env.validation.ts` is what makes that true.
 - **AI-generated content is flagged** (`was_ai_assisted`, the AI-teal marker in the UI). Attorneys must always know what came from the machine.
-- **Prompts are canonical and versioned** in `docs/08-prompts.md` and live in `apps/api/src/common/prompts/`. Never inline a system prompt in a service.
+- **Prompts are canonical and versioned** in `docs/08-prompts.md` and will live in `apps/api/src/common/prompts/` — that directory does not exist yet, and lands with the first AI module (slice 5). Never inline a system prompt in a service.
 - **The document classifier is deterministic** (keyword scoring, ~1ms, zero AI). Do not replace it with an LLM call.
 - **Claude's arithmetic is never trusted.** The deterministic Texas business-day engine sits between any extracted date and the stored one.
 
@@ -220,6 +224,7 @@ Docs are in `docs/`, numbered for reading order. **Don't load everything — sev
 | **Any NestJS wiring** — a module, provider, guard, pipe, filter, the worker, a test seam | `18-nestjs-conventions.md` |
 | Columns that can't be backfilled later, TDPSA | `16-compliance-gaps.md` |
 | **Committing, what the guard blocks, the merge flow** | `19-commit-and-merge.md` |
+| **Reviewing or testing any module** — especially anything touching permissions | `20-review-lessons.md` |
 | Product/market framing, Phase 2 boundary | `15-project-context.md`, `17-ai-principles.md` |
 
 `memory/` is a sibling of `docs/`, not part of it: `Instructions.md` (how to work on this project), `Context.md` (what the project is and what's decided), `Memory.md` (running log of preferences and decisions).
@@ -269,3 +274,4 @@ The docs are a spec set written over time and they contain known drift. Resoluti
 - **Commits:** conventional — `feat(deadlines): add TREC business-day calculator`.
 - **Every PR passes** lint, typecheck, and the full suite in CI before merge.
 - **Review checklist:** layering intact · no cross-module repository import · migration committed with any data-shape change · unit + integration + E2E present with negative cases · E2E gate actually passing · standard error envelope with typed code · AI paths obey Opinion 705 · no secrets, no PII in logs, no `console.log` · scope is one module or one feature.
+- **Plus, for anything touching permissions** (`20-review-lessons.md` Part 4): named population vs. admitted population compared **as sets** · at least one **adjacent-wrong-case** test per gate — an insider doing something they may not · no field feeding an access decision writable through a route that doesn't look like one · verification runs **forced**, not cache-replayed · findings **executed**, not only traced.

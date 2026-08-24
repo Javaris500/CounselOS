@@ -39,8 +39,8 @@ import { UpdateTransactionDto } from './dto/update-transaction.dto';
  *   PATCH  /transactions/:id/parties/:partyId FULL
  *   DELETE /transactions/:id/parties/:partyId FULL
  *   GET    /transactions/:id/access           READ_ONLY
- *   POST   /transactions/:id/access           FULL
- *   DELETE /transactions/:id/access/:userId   FULL
+ *   POST   /transactions/:id/access           MANAGE_ACCESS
+ *   DELETE /transactions/:id/access/:userId   MANAGE_ACCESS
  *
  * Twelve of the fourteen touch a matter, and twelve carry the decorator. The
  * other two have no matter to resolve against, and say so on the line.
@@ -182,9 +182,16 @@ export class TransactionsController {
 
   // ── matter access (8G) ─────────────────────────────────────────────────────
   //
-  // Granting takes FULL, which is exactly "OWNER, or the assigned attorney"
-  // (13 §1) resolved by the guard — expressed as the access level rather than
-  // as a second role check that would drift from the ladder.
+  // Granting takes MANAGE_ACCESS — "OWNER, or the assigned attorney" (13 §1).
+  //
+  // It took FULL until 2026-08-24, on the stated belief that FULL *was* that
+  // pair. It is not: the ladder also grants FULL to the assigned PARALEGAL and
+  // to anyone holding a live grant. Review confirmed against the real stack
+  // that a paralegal could hand her matter to the whole firm and that a
+  // two-week grant could re-grant itself with no expiry. The requirement is
+  // still expressed as a level rather than a role check in the handler, so it
+  // stays beside the ladder instead of drifting from it — the level is simply
+  // the right one now.
 
   @MatterAccess('READ_ONLY')
   @Get(':id/access')
@@ -192,7 +199,7 @@ export class TransactionsController {
     return this.access.listGrants(params.id);
   }
 
-  @MatterAccess('FULL')
+  @MatterAccess('MANAGE_ACCESS')
   @Post(':id/access')
   grantAccess(
     @CurrentUser() user: AuthUser,
@@ -202,7 +209,7 @@ export class TransactionsController {
     return this.access.grant(user, matter, body);
   }
 
-  @MatterAccess('FULL')
+  @MatterAccess('MANAGE_ACCESS')
   @Delete(':id/access/:userId')
   @HttpCode(HttpStatus.OK)
   revokeAccess(

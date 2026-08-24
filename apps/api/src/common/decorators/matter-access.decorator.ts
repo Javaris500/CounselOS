@@ -19,8 +19,17 @@ import type { MatterAccessContext } from '../../modules/transactions/matter-acce
  *
  * Writes take FULL. GETs take READ_ONLY, which an unassigned attorney has so
  * they can cover — and a paralegal never does.
+ *
+ * MANAGE_ACCESS is a THIRD requirement, not a third decision. The ladder still
+ * answers only FULL or READ_ONLY; this asks the narrower question 13 §1 asks of
+ * the two grant routes — "OWNER, or the attorney this matter is assigned to".
+ * It exists because FULL is held by five populations, not two: the assigned
+ * PARALEGAL and anyone holding a live grant have it as well, so gating
+ * `POST /:id/access` on FULL let a paralegal hand out firm-wide access and let
+ * a two-week coverage grant re-grant itself permanently. Confirmed against the
+ * real stack in review, 2026-08-24, not inferred.
  */
-export type MatterAccessLevel = 'FULL' | 'READ_ONLY';
+export type MatterAccessLevel = 'FULL' | 'READ_ONLY' | 'MANAGE_ACCESS';
 
 export const MATTER_ACCESS = 'matterAccess';
 

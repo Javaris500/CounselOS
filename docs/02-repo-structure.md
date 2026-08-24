@@ -16,6 +16,10 @@ counselos/
 │   ├── shared/                 # types, enums, error codes — the sync contract
 │   └── config/                 # shared tsconfig, eslint, prettier
 ├── docs/                       # the spec set — see docs/README.md for the index
+├── memory/                     # Context.md (what this is) · Memory.md (preferences) · Instructions.md
+├── agents/                     # one identity file per feature agent — see .team-5/status/merge-queue.md
+├── .team-5/                    # the working apparatus: dispatch, reports, findings, logs, shared registries
+├── scripts/                    # repo tooling (the pre-commit guard, mount checks)
 ├── docker/
 │   └── postgres/init/          # pgvector + pgcrypto + pg_trgm, first boot only
 ├── .github/workflows/          # CI: lint, typecheck, test, migrate
@@ -23,8 +27,36 @@ counselos/
 ├── package.json                # workspaces root
 ├── pnpm-workspace.yaml
 ├── turbo.json
-└── README.md
+├── CLAUDE.md                   # the standing rules — how to build
+├── README.md                   # the public front door
+├── SURPRISES.md                # append-only incident log, written as it happens
+├── COST-LOG.md                 # what the apparatus costs to run
+└── MISSION-001-COUNSELOS-SLICE-0.md   # the slice-0 mission brief (historical; complete)
 ```
+
+### Where a new file goes — the root is not a junk drawer
+
+The root accumulates by default, because every artifact with no obvious home lands there. Four
+homes exist and one rule decides between them:
+
+| it is… | it goes in | shape |
+|---|---|---|
+| a **specification** — how something should work | `docs/NN-name.md` | numbered, indexed in `docs/README.md`, loaded by task |
+| a **record of work** — a dispatch, report, finding, or log entry | `.team-5/<kind>/` | templated; the logs are append-only |
+| **project context or a working preference** | `memory/` | three files, no more |
+| a **standing rule** for how to build | `CLAUDE.md` | one file; it is the rulebook, not a scratchpad |
+
+**A new root-level `.md` needs an argument.** The four that exist have one: `CLAUDE.md` and
+`README.md` are entry points tooling and people expect at the root; `SURPRISES.md` is deliberately
+outside `docs/` because it is a raw log rather than a specification, and putting it in the numbered
+set would invite editing it into tidiness (the one thing its header forbids); `COST-LOG.md` is
+operational. **`MISSION-001-COUNSELOS-SLICE-0.md` is the exception that proves the rule** — a
+completed mission brief that is now history, and the kind of file that should have been written
+into `.team-5/dispatch/` from the start. Do not add a second one at the root.
+
+**Three things that must not appear at the root, ever:** a generated build artifact (`docs/README.md`
+lists what doesn't ship), a filled `.env`, or a per-session scratch file. Scratch work goes outside
+the repo.
 
 **`docker-compose.yml` is local development only.** It runs Postgres (with pgvector) and Redis so `pnpm dev` works offline and without spending the shared Supabase project or the Upstash free-tier budget. It is **not** the test harness — integration and E2E tests boot their own throwaway containers via testcontainers — and it does **not** replace Supabase Auth or Storage, which stay hosted. Production images are the Railway `Dockerfile` in `05-backend-checklist.md` §17A, which is a different thing entirely.
 

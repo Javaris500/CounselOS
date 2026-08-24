@@ -260,6 +260,7 @@ describe('MatterAccessService.resolve — 8G', () => {
       expect(service.listScope(user('PARALEGAL', PARALEGAL_ID))).toEqual({
         kind: 'ASSIGNED_OR_GRANTED',
         userId: PARALEGAL_ID,
+        asOf: NOW,
       });
     });
 
@@ -267,7 +268,54 @@ describe('MatterAccessService.resolve — 8G', () => {
       expect(service.listScope(user('CLIENT'))).toEqual({
         kind: 'ASSIGNED_OR_GRANTED',
         userId: OTHER_ID,
+        asOf: NOW,
       });
+    });
+
+    /**
+     * ONE RULE, ONE CLOCK.
+     *
+     * The list predicate used to evaluate grant expiry against SQL `now()`
+     * while `resolve()` evaluated it against the injected Clock. Two clocks for
+     * one rule: the detail route and the list could disagree at the boundary,
+     * and pinning the Clock in a test could not pin the list — so the edge that
+     * matters most was the one edge no test could hold still.
+     */
+    it('carries the SAME clock resolve() uses, so the two surfaces cannot disagree', () => {
+      const scope = service.listScope(user('PARALEGAL', PARALEGAL_ID));
+      if (scope.kind !== 'ASSIGNED_OR_GRANTED') throw new Error('expected a narrowed scope');
+
+      expect(scope.asOf.getTime()).toBe(NOW.getTime());
+
+      // The grant that resolve() calls expired at exactly this instant must be
+      // the same instant the list excludes it from.
+      const decision = service.resolve(user('PARALEGAL', PARALEGAL_ID), matter({
+        assignedParalegalId: null,
+        grant: { expiresAt: scope.asOf },
+      }));
+      expect(decision).toEqual({ granted: false, reason: 'ACCESS_EXPIRED' });
+    });
+  });
+
+  /**
+   * MANAGE_ACCESS is a REQUIREMENT, not a rung — so it is asserted where it
+   * lives, through `authorize()`, not here. Its cases are in the E2E:
+   * "MANAGE_ACCESS — holding FULL is not a licence to hand out access".
+   *
+   * What belongs here is the fact the requirement exists to protect: FULL is
+   * held by more than the two people 13 §1 lets manage access.
+   */
+  describe('the population that holds FULL is wider than the one that may grant', () => {
+    it('the assigned paralegal and a grantee both hold FULL — which is why FULL cannot gate granting', () => {
+      const paralegal = service.resolve(user('PARALEGAL', PARALEGAL_ID), matter());
+      const grantee = service.resolve(
+        user('PARALEGAL', OTHER_ID),
+        matter({ assignedParalegalId: null, grant: { expiresAt: null } }),
+      );
+
+      expect(paralegal).toEqual({ granted: true, level: 'FULL' });
+      expect(grantee).toEqual({ granted: true, level: 'FULL' });
+      // Neither is the assigned attorney, and neither is the OWNER.
     });
   });
 });

@@ -57,7 +57,7 @@
 counselos/
 ├── CLAUDE.md               standing rules for Claude Code — MUST stay at repo root
 ├── memory/                 this Layer 2 system (Instructions · Context · Memory · README)
-├── docs/                   19 numbered docs, 00–18 — see docs/README.md for the index
+├── docs/                   20 numbered docs, 00–19 — see docs/README.md for the index
 ├── apps/api/               NestJS backend
 ├── apps/web/               Next.js frontend
 ├── packages/shared/        the sync contract — enums, error codes, SSE events, limits
