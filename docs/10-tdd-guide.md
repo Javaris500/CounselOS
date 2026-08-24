@@ -193,7 +193,7 @@ API E2E catches a broken status transition. Browser E2E catches a button that ne
 ### Playwright rules
 
 - **`data-testid` is the selector contract.** Convention `{domain}-{element}-{action?}` kebab-case (`deadline-confirm-btn`). Added in the **same commit as the component**, never retrofitted. Never select on text content or CSS classes — they shatter on every design change.
-- **Import seeded IDs** from `apps/api/src/database/seed/ids.ts`. Never hardcode a UUID, never click through the UI to find a fixture.
+- **Import seeded IDs** from `apps/api/src/database/seed.ts` (`SEED_IDS`, and `SEED_NAMES` for a name an assertion must not invent). Never hardcode a UUID, never click through the UI to find a fixture. Path corrected 2026-08-24 — this doc named a `seed/ids.ts` that has never existed, and a Playwright fixture lost time to it.
 - **Never log in inside a test.** Auth comes from `storageState` per role, set up once. The login flow itself is tested explicitly, once, in slice 0.
 - **AI is mocked in CI** (`E2E_MOCK_AI=true`). Never assert on live model output — it flakes and costs money. One manually-run live suite before releases.
 - **Pin the clock** with `page.clock.setFixedTime()` in any test asserting on deadline urgency. Seed dates are relative to `SEED_TODAY`, not `new Date()`.

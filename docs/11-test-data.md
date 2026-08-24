@@ -453,7 +453,9 @@ FIRM_ID=               # hardcoded single firm ID for Phase 1
 
 ### Seed Files to Create Before First API Endpoint
 
-> Seeds live at `apps/api/src/database/seed/` and run via `pnpm --filter api db:seed`. **All IDs are hardcoded UUIDs** — see Part 6 for why this is non-negotiable for Playwright.
+> Seeds live in `apps/api/src/database/seed.ts` — ONE file, not a `seed/` directory; the tree below describes a layout that was never built, and the corrected path is what `db:seed` runs (2026-08-24). Run via `pnpm --filter api db:seed`. **All IDs are hardcoded UUIDs** — exported as `SEED_IDS`, with `SEED_NAMES` beside them; see Part 6 for why this is non-negotiable for Playwright.
+>
+> A Playwright spec cannot `import` it in-process: `seed.ts` pulls `PG_CLIENT_OPTIONS` from `database.module.ts`, and Playwright's Babel rejects NestJS parameter decorators. Read it through a `tsx` subprocess (`e2e/fixtures/seed.ts`) until that constant moves to a NestJS-free file.
 
 ```
 apps/api/src/database/seed/
@@ -495,7 +497,7 @@ Every seeded record uses a **hardcoded UUID**, never `defaultRandom()`. Playwrig
 Convention — readable, obviously synthetic, valid v4 shape:
 
 ```ts
-// apps/api/src/database/seed/ids.ts — the single source of seeded IDs.
+// apps/api/src/database/seed.ts — the single source of seeded IDs (SEED_IDS).
 // Imported by BOTH the seed script and the Playwright tests.
 export const SEED = {
   firm:            '00000000-0000-4000-8000-000000000001',

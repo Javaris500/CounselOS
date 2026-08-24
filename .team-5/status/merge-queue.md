@@ -87,7 +87,7 @@ gated together. Four conditions came with that decision:
 
 | order | agent | slice | module | blocked by |
 |---|---|---|---|---|
-| 1 | transactions | 1 | Module 3 + 8G | — cleared 2026-08-23 |
+| 1 | transactions | 1 | Module 3 + 8G | — cleared 2026-08-23 · **merged 2026-08-24** |
 | 2 | documents | 2 | Module 4 | Module 3 |
 | 3 | drafts · case-ops | 6 · 4/7 | Module 7 · 8A–8D | Module 3 |
 | 4 | chat · deadlines | 5 · 3 | Module 5 · Module 6 + M1 | Module 4 |
@@ -127,7 +127,9 @@ is specced and parked, not cancelled.
 |---|---|---|---|---|---|---|
 | 0a | foundation: frontend | operator | — | merged | — | 2026-08-23 |
 | 0b | foundation: backend + auth | operator | — | merged | pass (6/6) | 2026-08-23 |
-| 1 | transactions | transactions | feat/transactions-slice-1 | queued | — | — |
+| 1 | transactions | transactions | feat/transactions-slice-1 | merged | pass (48/48) | 2026-08-24 |
+| 1 | transactions — browser gate | nemi | test/nemi-slice-1 | merged | pass (48/48) | 2026-08-24 |
+| 2 | documents | documents | — | queued | — | — |
 
 **Status:** `queued` → `integrating` → `gate-running` → `merged` | `blocked`
 

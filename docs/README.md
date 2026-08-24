@@ -69,6 +69,7 @@ These are needed while writing code. Every one answers a question an engineer wi
 | 17 | `17-ai-principles.md` | — | Why the AI guardrails are shaped the way they are |
 | 18 | `18-nestjs-conventions.md` | — | **Framework decisions made once.** DI, validation stack, globals, scope, two-entrypoint wiring, test seams. Read before writing the first provider. |
 | 19 | `19-commit-and-merge.md` | — | **Who commits, who pushes, what the guard blocks.** The three silent failures no tool catches. Read before your first commit. |
+| 20 | `20-review-lessons.md` | — | **The four defect classes that survive a green suite.** Named-population vs. level, comments that assert what the code lacks, one rule with two implementations, docs describing the target. Read before reviewing or testing a module. |
 
 ---
 

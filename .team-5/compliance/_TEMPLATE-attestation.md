@@ -4,7 +4,10 @@
 
 slice:
 gate:                     # opinion-705-attestation | ai-marker | citation-verbatim | client-portal-404
-requirement_source:       # e.g. "Texas Opinion 705" | "07-design-handoff.md AI marker" | "01-architecture.md §8"
+requirement_source:       # e.g. "Texas Opinion 705" | "07-design-handoff.md AI marker" | "18-nestjs-conventions.md §8"
+                          # Cite a doc that EXISTS. This line named `01-architecture.md` until
+                          # 2026-08-24; no such file has ever been in this repo, and an example
+                          # teaches every attestation written after it.
 built_by:
 verified_by:              # MUST be someone other than built_by
 date:                     # YYYY-MM-DD

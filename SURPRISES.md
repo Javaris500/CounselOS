@@ -280,3 +280,55 @@ Before messaging an idle agent, check whether its last turn ended in output or i
 
 **Cost:** ~40 minutes of assumed-in-progress state, and an uncommitted security change that sat
 unverified in a worktree the operator believed was being actively worked.
+
+---
+
+## 008 — 2026-08-24 — The thorough access-control suite could not have caught the bug
+
+Module 3's 8G coverage is the most careful in the repo. A twelve-route enumeration hits every
+matter-scoped endpoint with an unassigned paralegal. A unit spec walks the ladder rung by rung,
+including an exhaustive grid over "no combination grants more than its rung" and the exact-instant
+expiry boundary. Every one passed, and post-merge review still found three privilege escalations.
+
+**Every test asked the same question.** *Is the wrong person denied?* Not one asked *is the right
+person limited?* All three attackers — an assigned paralegal, an assigned paralegal again, and a
+live grantee — were legitimately on the matter and passed every denial test by design.
+
+**Why this is the surprise and not just a gap.** More tests of the kind already written would not
+have found it, and neither would a more careful reading of the ones that exist. The suite is not
+thin; it is aimed. `role === 'ATTORNEY'` where the rule is assignment is the bug the whole module
+was built to avoid, and it is documented at length in `matter-access.service.ts` — but the
+*converse* has no name and no test: a permission LEVEL standing in for a NAMED population. FULL is
+held by five populations; 13 §1 grants to two of them.
+
+**The lesson that generalizes:** a negative-case suite tests outsiders. Insider overreach is a
+separate axis, and a checklist that says "test the wrong role → 403" reads as covering it while
+covering none of it. Compare the named population to the admitted population as *sets*, in writing.
+
+**Cost:** the three escalations shipped to `main` and lived there for one day. Found by review
+rather than by any gate. Fixing them took under an hour; finding them took a deliberate,
+adversarial pass that no gate would have triggered.
+
+---
+
+## 009 — 2026-08-24 — `FULL TURBO` is indistinguishable from a pass
+
+Verifying that slices 0 and 1 were genuinely green started with `pnpm lint && pnpm typecheck`.
+Both returned `Tasks: 4 successful, 4 total · FULL TURBO` in 60ms.
+
+The replayed logs named their origin: `/home/jt0629/projects/counselOS-worktrees/transactions-slice-1/apps/api`.
+The cache entries were produced in a **worktree**, so neither command had ever executed against
+`main`'s merged tree. Forced, both did pass — but the first run proved nothing and looked identical
+to the run that did.
+
+**Why this is the surprise.** Turbo prints the origin path in the replayed log, so the evidence was
+on screen and read past. A cache hit is *supposed* to be indistinguishable from a pass; that is the
+feature. It stops being a feature the moment the output is being used as proof that a merge is
+sound.
+
+**The lesson that generalizes:** when a command's output is evidence rather than feedback, force
+it. `--force` costs ten seconds. Trusting a cross-tree cache costs the entire claim built on it.
+
+**Cost:** near zero, caught immediately — but only because the origin path happened to be read.
+Worth recording precisely because it nearly wasn't.
+
