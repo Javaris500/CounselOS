@@ -8,7 +8,7 @@ import request from 'supertest';
 import { authHeader, createTestKeyring, type TestKeyring } from '../../../../test/helpers/auth.helper';
 import { AppModule } from '../../../app.module';
 import { PG_CLIENT_OPTIONS } from '../../../database/database.module';
-import { SEED_IDS } from '../../../database/seed';
+import { SEED_IDS, SEED_NAMES } from '../../../database/seed';
 import { JWKS } from '../../auth/jwks.provider';
 import { SUPABASE_AUTH } from '../../auth/supabase.provider';
 
@@ -582,6 +582,175 @@ describe('Module 3 — transactions + 8G matter access (e2e)', () => {
     it('a malformed id is a 404, not a 500 from a failed uuid cast', async () => {
       const res = await api().get('/v1/transactions/not-a-uuid').set(authHeader(attorneyToken));
       expect(res.status).toBe(404);
+    });
+
+    /**
+     * THE ADJACENT-WRONG-CASE BLOCK.
+     *
+     * Every other 8G test above asks "is the WRONG person denied?". None asked
+     * "is the RIGHT person limited?" — and all three escalations found in
+     * review 2026-08-24 were committed by people legitimately on the matter,
+     * so the enumeration below could not have caught any of them.
+     *
+     * FULL was being used as a stand-in for "OWNER, or the assigned attorney".
+     * It is held by five populations, not two.
+     */
+    describe('MANAGE_ACCESS — holding FULL is not a licence to hand out access', () => {
+      it('the assigned PARALEGAL cannot grant access to a colleague', async () => {
+        const res = await api()
+          .post(`/v1/transactions/${TX.manorRd}/access`)
+          .set(authHeader(paralegalToken))
+          .send({ userId: SEED_IDS.users.owner });
+
+        expect(res.status).toBe(403);
+        expect(res.body.error.code).toBe('MATTER_ACCESS_DENIED');
+        expect(res.body.error.details.reason).toEqual(['NOT_MATTER_ATTORNEY']);
+        // The denial still names who CAN do it — a bare 403 here is a ticket.
+        expect(res.body.error.message).toContain(SEED_NAMES.attorney);
+      });
+
+      it('the assigned PARALEGAL cannot revoke a colleague either', async () => {
+        const res = await api()
+          .delete(`/v1/transactions/${TX.manorRd}/access/${SEED_IDS.users.owner}`)
+          .set(authHeader(paralegalToken));
+
+        expect(res.status).toBe(403);
+        expect(res.body.error.details.reason).toEqual(['NOT_MATTER_ATTORNEY']);
+      });
+
+      it('a GRANTED user cannot re-grant — delegation stops at the grantee', async () => {
+        await api()
+          .post(`/v1/transactions/${TX.clawsonRd}/access`)
+          .set(authHeader(attorneyToken))
+          .send({ userId: SEED_IDS.users.paralegal })
+          .expect(201);
+
+        // She can open it — the grant works.
+        await api()
+          .get(`/v1/transactions/${TX.clawsonRd}`)
+          .set(authHeader(paralegalToken))
+          .expect(200);
+
+        // She cannot pass it on.
+        const res = await api()
+          .post(`/v1/transactions/${TX.clawsonRd}/access`)
+          .set(authHeader(paralegalToken))
+          .send({ userId: SEED_IDS.users.owner });
+        expect(res.status).toBe(403);
+
+        await api()
+          .delete(`/v1/transactions/${TX.clawsonRd}/access/${SEED_IDS.users.paralegal}`)
+          .set(authHeader(attorneyToken))
+          .expect(200);
+      });
+
+      it('a time-boxed grant cannot make ITSELF permanent', async () => {
+        await api()
+          .post(`/v1/transactions/${TX.annieSt}/access`)
+          .set(authHeader(attorneyToken))
+          .send({ userId: SEED_IDS.users.paralegal, expiresAt: '2099-01-01T00:00:00.000Z' })
+          .expect(201);
+
+        // The escalation: re-grant yourself with no expiry. `grant()` upserts
+        // on (transaction_id, user_id) and overwrites `expires_at`, so this
+        // used to return 201 and leave expires_at NULL — permanent access,
+        // self-issued, defeating the whole point of the expiry.
+        const res = await api()
+          .post(`/v1/transactions/${TX.annieSt}/access`)
+          .set(authHeader(paralegalToken))
+          .send({ userId: SEED_IDS.users.paralegal });
+        expect(res.status).toBe(403);
+
+        const [row] = await sql<{ expires_at: Date | null }[]>`
+          SELECT expires_at FROM matter_access
+          WHERE transaction_id = ${TX.annieSt} AND user_id = ${SEED_IDS.users.paralegal}`;
+        expect(row?.expires_at).not.toBeNull();
+
+        await api()
+          .delete(`/v1/transactions/${TX.annieSt}/access/${SEED_IDS.users.paralegal}`)
+          .set(authHeader(attorneyToken))
+          .expect(200);
+      });
+
+      it('nobody grants themselves — even the assigned attorney', async () => {
+        const res = await api()
+          .post(`/v1/transactions/${TX.clawsonRd}/access`)
+          .set(authHeader(attorneyToken))
+          .send({ userId: SEED_IDS.users.attorney });
+
+        expect(res.status).toBe(422);
+        expect(res.body.error.code).toBe('VALIDATION_ERROR');
+      });
+
+      it('the OWNER may still grant on a matter they are not assigned to', async () => {
+        await api()
+          .post(`/v1/transactions/${TX.clawsonRd}/access`)
+          .set(authHeader(ownerToken))
+          .send({ userId: SEED_IDS.users.paralegal })
+          .expect(201);
+
+        await api()
+          .delete(`/v1/transactions/${TX.clawsonRd}/access/${SEED_IDS.users.paralegal}`)
+          .set(authHeader(ownerToken))
+          .expect(200);
+      });
+    });
+
+    /**
+     * ASSIGNMENT IS THE LADDER'S INPUT, NOT A DETAIL FIELD.
+     *
+     * `PATCH /:id` accepted `assignedAttorneyId` until 2026-08-24, so the
+     * assigned paralegal could move the matter to another attorney and demote
+     * its own attorney to READ_ONLY cover.
+     */
+    describe('the general PATCH cannot rewrite the assignment columns', () => {
+      it('an assignment-only body is rejected as empty — the key is stripped', async () => {
+        const res = await api()
+          .patch(`/v1/transactions/${TX.manorRd}`)
+          .set(authHeader(paralegalToken))
+          .send({ assignedAttorneyId: SEED_IDS.users.owner });
+
+        expect(res.status).toBe(422);
+      });
+
+      it('a mixed body applies the detail and silently drops the assignment', async () => {
+        const res = await api()
+          .patch(`/v1/transactions/${TX.manorRd}`)
+          .set(authHeader(paralegalToken))
+          .send({ propertyZip: '78723', assignedAttorneyId: SEED_IDS.users.owner });
+
+        expect(res.status).toBe(200);
+        expect(res.body.data.propertyZip).toBe('78723');
+        expect(res.body.data.assignedAttorneyId).toBe(SEED_IDS.users.attorney);
+      });
+    });
+
+    it('an expired grant drops the matter from the LIST, not just the detail route', async () => {
+      await api()
+        .post(`/v1/transactions/${TX.clawsonRd}/access`)
+        .set(authHeader(attorneyToken))
+        .send({ userId: SEED_IDS.users.paralegal })
+        .expect(201);
+
+      const visible = await api()
+        .get('/v1/transactions?limit=50')
+        .set(authHeader(paralegalToken))
+        .expect(200);
+      expect(visible.body.data.map((t: { id: string }) => t.id)).toContain(TX.clawsonRd);
+
+      await sql`UPDATE matter_access SET expires_at = now() - interval '1 day'
+                WHERE transaction_id = ${TX.clawsonRd} AND user_id = ${SEED_IDS.users.paralegal}`;
+
+      const after = await api()
+        .get('/v1/transactions?limit=50')
+        .set(authHeader(paralegalToken))
+        .expect(200);
+      expect(after.body.data.map((t: { id: string }) => t.id)).not.toContain(TX.clawsonRd);
+
+      await api()
+        .delete(`/v1/transactions/${TX.clawsonRd}/access/${SEED_IDS.users.paralegal}`)
+        .set(authHeader(attorneyToken))
+        .expect(200);
     });
 
     /**

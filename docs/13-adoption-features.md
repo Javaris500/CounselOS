@@ -59,14 +59,36 @@ resolveAccess(user, transactionId) →
   6. otherwise                                → DENIED
 ```
 
-Endpoints declare what they require via a `@MatterAccess('FULL' | 'READ_ONLY')` decorator. Write operations require FULL; GETs accept READ_ONLY.
+Endpoints declare what they require via a `@MatterAccess('FULL' | 'READ_ONLY' | 'MANAGE_ACCESS')` decorator. Write operations require FULL; GETs accept READ_ONLY.
+
+> **`MANAGE_ACCESS` is a requirement, not a rung** (added 2026-08-24). The ladder above still
+> decides only FULL or READ_ONLY. `MANAGE_ACCESS` asks the narrower question afterwards — *OWNER,
+> or the attorney this matter is assigned to?* — because **FULL is held by five populations and
+> this section's grant rule names two of them.** The assigned paralegal has FULL. So does anyone
+> holding a live grant. Gating `POST /:id/access` on FULL therefore read as implementing the line
+> below while being strictly wider than it, and a review confirmed against a live stack that a
+> paralegal could hand her matter to the whole firm and that a two-week coverage grant could
+> re-grant its own holder with no expiry — defeating the one control that makes temporary access
+> temporary.
 
 **Endpoints:**
 ```
-POST   /v1/transactions/:id/access      — grant (OWNER, or the assigned attorney)
-DELETE /v1/transactions/:id/access/:userId — revoke
-GET    /v1/transactions/:id/access      — who can see this matter
+POST   /v1/transactions/:id/access      — grant  [MANAGE_ACCESS: OWNER, or the assigned attorney]
+DELETE /v1/transactions/:id/access/:userId — revoke [MANAGE_ACCESS]
+GET    /v1/transactions/:id/access      — who can see this matter [READ_ONLY]
 ```
+
+**Two rules that fall out of the grant table, and are not optional:**
+
+- **Nobody grants themselves.** The grant write upserts on `(transaction_id, user_id)` and
+  overwrites `expires_at`, so any holder who can call it can erase their own expiry. A self-grant
+  is refused with 422 — there is no legitimate case, since everyone who passes `MANAGE_ACCESS`
+  already has FULL.
+- **`assigned_attorney_id` and `assigned_paralegal_id` are not writable through the general
+  `PATCH /:id`.** They are this ladder's input. A partial-update route that accepts them is an
+  access-control route that does not look like one — and it let an assigned paralegal move a
+  matter to another attorney and demote its own attorney to read-only cover. Grants exist
+  precisely so coverage does not require changing ownership; use them.
 
 ## Permission errors must explain themselves
 
@@ -89,7 +111,14 @@ GET    /v1/transactions/:id/access      — who can see this matter
 
 Frontend renders: *"This matter is assigned to James Okafor. Ask them for access."* — with a button that requests it. Never a bare "Access denied."
 
-Reason codes: `NOT_ASSIGNED`, `READ_ONLY_ROLE`, `ACCESS_EXPIRED`, `ROLE_INSUFFICIENT`.
+Reason codes: `NOT_ASSIGNED`, `READ_ONLY_ROLE`, `ACCESS_EXPIRED`, `ROLE_INSUFFICIENT`,
+`NOT_MATTER_ATTORNEY`.
+
+> `NOT_MATTER_ATTORNEY` was added 2026-08-24 with `MANAGE_ACCESS`. It is the honest answer for
+> someone who *can* work the matter but may not change who else can — an assigned paralegal
+> reaching for the grant button. `READ_ONLY_ROLE` would have been a lie (she is not read-only)
+> and `NOT_ASSIGNED` a bigger one (she is assigned). Its message names the assigned attorney,
+> like the others, so the UI can still say who to ask.
 
 > **Values are arrays of one, and that is deliberate** (corrected 2026-08-23). `ApiError.details` is
 > typed `Record<string, string[]>` in `packages/shared/src/types/api.ts`, because its primary job is

@@ -25,7 +25,18 @@ export type NewTransactionRow = Omit<typeof transactions.$inferInsert, 'transact
  * the exact shape of the bug 19 §2.3 describes, and it would sit somewhere no
  * access-control reviewer thinks to look.
  */
-export type ListScope = { kind: 'ALL' } | { kind: 'ASSIGNED_OR_GRANTED'; userId: string };
+export type ListScope =
+  | { kind: 'ALL' }
+  /**
+   * `asOf` comes from the injected Clock, NOT from SQL `now()`.
+   *
+   * The detail route decides grant expiry against `Clock`; this predicate used
+   * to decide it against the database's clock. One rule, two clocks: the two
+   * surfaces could disagree at the boundary, and a test that pins the Clock
+   * could not pin the list — so the expiry edge was unpinnable exactly where it
+   * matters most.
+   */
+  | { kind: 'ASSIGNED_OR_GRANTED'; userId: string; asOf: Date };
 
 /** Postgres unique_violation. The partial index is what makes numbers unique. */
 const UNIQUE_VIOLATION = '23505';
@@ -142,7 +153,11 @@ export class TransactionsRepository {
             SELECT 1 FROM matter_access ma
             WHERE ma.transaction_id = ${transactions.id}
               AND ma.user_id = ${scope.userId}
-              AND (ma.expires_at IS NULL OR ma.expires_at > now())
+              -- ISO string + explicit cast, NOT a bare Date. In a raw \`sql\`
+              -- template the driver binds a Date with no type context, and
+              -- Postgres cannot compare an untyped parameter to timestamptz —
+              -- the whole list route 500s. The cast is what makes it a date.
+              AND (ma.expires_at IS NULL OR ma.expires_at > ${scope.asOf.toISOString()}::timestamptz)
           )
         )`,
       );
