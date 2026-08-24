@@ -40,6 +40,9 @@ operator flips rows to `exists` as Slice 0 lands.
 | Badge / status pill | `components/ui/Badge` | exists | urgency ladder — never hue alone |
 | AI marker | `components/ui/AiMarker` | exists | AI-teal; wraps ALL AI-generated content |
 | Inline spinner | `components/ui/Spinner` | exists | in-place actions only, never page-level |
+| Card / panel | `components/ui/Card` | exists | bordered surface; `accent` left rule pairs with a Badge, never colour alone |
+| Tab navigation | `components/ui/Tabs` | exists | Links not buttons, so tabs deep-link; a tab with no `href` renders DISABLED, never hidden |
+| Dropdown / select | `components/ui/Select` | exists | native `<select>`; a combobox is a separate entry with its own argument, not a widened Select |
 
 ## Registering a new primitive
 
@@ -51,6 +54,9 @@ A primitive you build and register starts at `exists` — you built it, so it do
 
 | date | agent | element | implementation | why it wasn't covered |
 |---|---|---|---|---|
+| 2026-08-23 | transactions | Card / panel | `components/ui/Card` | Slice 0a shipped 12 primitives and no surface. Every slice was about to invent one — a pipeline card, a party card, a deadline card — and four near-identical bordered divs is exactly the divergence this file exists to catch. |
+| 2026-08-23 | transactions | Tab navigation | `components/ui/Tabs` | The transaction detail shell is the frame five slices mount into; without a canonical strip each arriving slice would style its own. Disabled-not-hidden is the contract: a tab whose slice has not landed still shows. |
+| 2026-08-23 | transactions | Dropdown / select | `components/ui/Select` | The status control and the outcome prompt both need one, and the status control is where a wrong value is a wrong LEGAL state — native `<select>` gets keyboard, typeahead and mobile from the platform. |
 
 ## What Nemi audits for
 

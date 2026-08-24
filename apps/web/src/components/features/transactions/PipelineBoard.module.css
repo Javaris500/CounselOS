@@ -1,0 +1,82 @@
+.page {
+  padding: var(--s-6);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin-bottom: var(--s-5);
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  font-weight: 500;
+}
+
+.subheading {
+  margin: var(--s-0-5) 0 0;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.truncation {
+  margin: 0 0 var(--s-3);
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+
+/* Horizontal scroll on the BOARD, never on the page body. */
+.board {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(240px, 1fr);
+  gap: var(--s-3);
+  overflow-x: auto;
+  padding-bottom: var(--s-2);
+}
+
+.column {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.columnHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  margin: 0;
+  padding-bottom: var(--s-1-5);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.count {
+  color: var(--text-tertiary);
+  font-size: var(--text-2xs);
+  font-weight: 400;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.columnEmpty {
+  margin: 0;
+  padding: var(--s-2);
+  color: var(--text-disabled);
+  font-size: var(--text-xs);
+}
