@@ -32,6 +32,62 @@ What to build, in plain prose. What "done" looks like beyond the gate. Anything 
 What this agent explicitly does NOT build. State it — five parallel agents drift into each other's slices when scope is only implied.
 
 ---
+
+## Standing notes — copy the relevant ones into every dispatch
+
+These are things an agent will otherwise rediscover at its own cost. They are not slice-specific,
+and they are not in `CLAUDE.md` because they are consequences of how this stack is wired rather
+than rules anyone chose.
+
+### Auth in a browser test — do NOT specify a storageState FILE
+
+**Added 2026-08-24, from the nemi slice 1 dispatch.** That dispatch asked for the textbook shape:
+log in once per role in a setup project, write `.auth/{role}.json`, point every later test at it.
+It cannot work against this API, and it fails in the worst available way — **test one passes, test
+two lands on `/auth/login`, and it reads as a flake** rather than as a design error. Budget an
+hour lost per agent that meets it cold.
+
+**Why.** The refresh token **rotates on use**. `AuthService.refresh()` hands the presented token to
+Supabase, which deletes it and issues a successor, and the API sets that successor as the cookie.
+The access token lives in memory in the Zustand store and never in localStorage, so the cookie is
+the only durable half of a session — and a captured cookie is therefore a **single-use credential**.
+The first test to load a protected page consumes it; the successor is written into that test's
+context and discarded with it; the file still holds the dead token.
+
+**Rotation is correct and is not the thing to change.** A refresh token that survives its own use is
+a replayable credential.
+
+**What to write instead:** one login per test, through `POST /v1/auth/login` rather than the form,
+returned as a `storageState` **object** — Playwright accepts one exactly where it accepts a path.
+The rule that actually matters, *no test drives the login UI*, holds. The file was never the point.
+
+The working harness is `apps/web/e2e/fixtures/auth.ts` (`role` option, `storageState` fixture,
+`openSecondSession()`). **Point the agent at it; do not let it rebuild one.**
+
+Phrase the clause in a dispatch as: *"Auth comes from the `storageState` fixture in
+`e2e/fixtures/auth.ts`. Never drive the login form; never write a storageState file."*
+
+### Seeded IDs cannot be imported directly from `seed.ts`
+
+`seed.ts` imports `PG_CLIENT_OPTIONS` from `database.module.ts`, so importing one constant drags a
+NestJS module — and its parameter decorators — through Playwright's Babel, which does not enable
+the legacy decorator transform. It fails with `Decorators cannot be used to decorate parameters`.
+
+`apps/web/e2e/fixtures/seed.ts` already works around it by reading the values out of a `tsx`
+subprocess. The IDs still come from the seed and nowhere else, which is what the
+never-hardcode-a-UUID rule is protecting. **The real fix is upstream** — `PG_CLIENT_OPTIONS` is a
+plain object and does not belong in a file that also defines a NestJS module — and until someone
+makes it, every slice inherits the workaround.
+
+### An illegal state transition is only reachable from a stale second view
+
+The status control only ever offers moves the server called legal, so a browser cannot request an
+illegal one from a freshly-loaded page. Any test of a refusal path needs two sessions: one moves
+the matter, the other holds its old ladder. `openSecondSession()` in the auth fixture exists for
+this. A dispatch that asks for a refusal to be tested without saying this sends the agent looking
+for a bug in its own test.
+
+---
 ---
 
 # WORKED EXAMPLE — drafts slice
