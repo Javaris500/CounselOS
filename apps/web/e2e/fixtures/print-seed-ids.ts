@@ -7,7 +7,9 @@
  * See the header of `seed.ts` for why the specs cannot simply import the seed
  * module in-process.
  */
-import { SEED_ANCHOR, SEED_IDS } from '../../../api/src/database/seed';
+import { SEED_ANCHOR, SEED_IDS, SEED_NAMES } from '../../../api/src/database/seed';
 
 // eslint-disable-next-line no-console
-console.log(`__SEED__${JSON.stringify({ ids: SEED_IDS, anchor: SEED_ANCHOR.toISOString() })}`);
+console.log(
+  `__SEED__${JSON.stringify({ ids: SEED_IDS, names: SEED_NAMES, anchor: SEED_ANCHOR.toISOString() })}`,
+);
