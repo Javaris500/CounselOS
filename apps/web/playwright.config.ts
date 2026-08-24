@@ -1,3 +1,6 @@
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+
 import { defineConfig, devices } from '@playwright/test';
 
 /**
@@ -14,6 +17,38 @@ import { defineConfig, devices } from '@playwright/test';
  * "login → dashboard" is supposed to establish (CLAUDE.md: mock only the true
  * externals).
  */
+/**
+ * `packages/shared` IS BUILT HERE, BEFORE ANY SERVER STARTS.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Both servers below import `@counselos/shared`, which resolves through its
+ * package.json `main` to `dist/index.js`. That directory is gitignored, so on a
+ * clean clone it does not exist and BOTH servers fail — the API with ~40 lines
+ * of `TS2307: Cannot find module '@counselos/shared'` and the web server with a
+ * module-not-found on the first page compile. Neither failure mentions the
+ * build, so it reads as a broken import in `src/`.
+ *
+ * It cannot go in `globalSetup` (Playwright starts webServers BEFORE global
+ * setup), and it cannot go inside either webServer `command`: the two start
+ * concurrently, so whichever one did not own the build would race an empty or
+ * half-written `dist/`. Config module scope is the only point that is
+ * guaranteed to run once, before both. `tsc` is incremental, so a warm tree
+ * pays roughly nothing.
+ *
+ * The real fix is upstream and outside this harness: `@counselos/api`'s own
+ * `build` script does not build its workspace dependency. Filed as a finding.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+// Skipped inside a worker: Playwright loads this config once per worker
+// process too, and TEST_WORKER_INDEX is how a worker announces itself. Building
+// again there is pure noise, and two tsc runs writing one dist/ is a race.
+if (process.env.TEST_WORKER_INDEX === undefined) {
+  execFileSync('pnpm', ['--filter', '@counselos/shared', 'build'], {
+    cwd: path.resolve(__dirname, '../..'),
+    stdio: 'inherit',
+  });
+}
+
 const WEB_PORT = 3100;
 const API_PORT = 3101;
 const FAKE_AUTH_PORT = 54321;
