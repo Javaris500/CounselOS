@@ -38,8 +38,12 @@ export function useTransactionList(): {
 
   return {
     transactions: data?.data,
-    total: data?.meta.total ?? 0,
-    hasMore: data?.meta.hasMore ?? false,
+    // `data?.meta.total` — one optional chain short. `data` is guarded, `meta`
+    // was not, so when apiFetch was still discarding `meta` this threw before
+    // `?? 0` could apply and the board rendered nothing. apiFetch now returns
+    // the envelope; the second `?.` stays because the guard belongs here too.
+    total: data?.meta?.total ?? 0,
+    hasMore: data?.meta?.hasMore ?? false,
     isLoading,
     error,
   };
