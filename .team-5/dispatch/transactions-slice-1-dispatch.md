@@ -23,6 +23,13 @@ file_boundary:
     - apps/web/src/components/features/transactions/
     - apps/web/src/components/ui/
   may_append_only:
+    # AMENDED 2026-08-23, mid-dispatch. A NestJS feature module does not load
+    # until AppModule imports it, and the original boundary gave no legal path
+    # to do that — an operator error, not an agent one. Append-only is the right
+    # constraint: add your import and your entry, never remove or reorder
+    # another module's. check-mounts.sh enforces that by failing on any removed
+    # line. See .team-5/findings/operator-slice-1-findings.md.
+    - apps/api/src/app.module.ts
     - apps/web/src/lib/api/queryKeys.ts
     - apps/web/src/lib/api/mutations.ts
     - packages/shared/src/errors/error-codes.ts
@@ -32,6 +39,12 @@ file_boundary:
     - .team-5/shared/contract-drift.md
     - .team-5/log/decision-log.md
     - .team-5/log/error-log.md
+    # AMENDED 2026-08-23 (second amendment). `.team-5/README.md` line 14 requires
+    # the agent to write its own completion report and compliance attestation;
+    # the original boundary permitted neither. Operator error, same shape as the
+    # app.module.ts one: a required output whose path was never granted.
+    - .team-5/reports/
+    - .team-5/compliance/
   must_not_touch:
     - apps/api/src/database/          # Foundations. schema.ts and seeds are the operator's.
     - apps/api/drizzle/               # Foundations. Migrations are ordered and immutable.

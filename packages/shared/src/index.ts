@@ -17,4 +17,6 @@ export * from './events/sse-events.js';
 export * from './constants/limits.js';
 export * from './types/api.js';
 export * from './types/auth.js';
+export * from './types/transaction.js';
 export * from './schemas/auth.schema.js';
+export * from './schemas/transaction.schema.js';

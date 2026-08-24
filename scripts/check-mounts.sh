@@ -24,7 +24,14 @@
 # the agent was handed is the thing it is measured against.
 
 set -uo pipefail
-cd "$(dirname "$0")/.."
+
+# The tree being checked is the CURRENT one, not the script's own. Resolving to
+# `dirname $0/..` meant an absolute-path invocation from a worktree silently
+# checked the main repo instead, found no changes, and printed "Nothing to
+# check" — which reads exactly like a pass. A verification tool that reports
+# success when pointed at the wrong target is worse than no tool.
+REPO="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "not inside a git repository"; exit 2; }
+cd "$REPO"
 
 DISPATCH="${1:-}"
 BASE="${2:-main}"
@@ -42,7 +49,15 @@ extract() {
   awk -v key="$1" '
     $0 ~ "^  " key ":" { on=1; next }
     on && /^  [a-z_]+:/ { on=0 }
-    on && /^ *- / { sub(/^ *- /,""); gsub(/^[ \t]+|[ \t]+$/,""); if ($0 != "") print }
+    on && /^ *#/ { next }                      # a comment line is not a path
+    on && /^ *- / {
+      sub(/^ *- /, "")
+      sub(/[ \t]+#.*$/, "")                    # strip a trailing inline comment
+      gsub(/^[ \t]+|[ \t]+$/, "")
+      gsub(/^["\047]|["\047]$/, "")           # strip surrounding quotes — a quoted
+                                               # glob is still a glob, not a literal
+      if ($0 != "") print
+    }
   ' "$DISPATCH"
 }
 
@@ -67,7 +82,17 @@ if [ "${#CHANGED[@]}" -eq 0 ]; then
   dim "  No changes against $BASE. Nothing to check."; echo; exit 0
 fi
 
-under() { case "$1" in "$2"*) return 0 ;; *) return 1 ;; esac; }
+# A boundary is a directory prefix OR a glob. Both are needed: a feature agent
+# owns `modules/transactions/` (a directory), a verification agent owns
+# `*.test.tsx` (a suffix, anywhere). SANDBOX.md flagged that mounts cannot
+# express the second — this is the diff-enforcement half doing it instead.
+# Bash `case` globs match `/`, so `*.test.tsx` spans directories as intended.
+under() {
+  case "$2" in
+    *[*?]*) case "$1" in $2) return 0 ;; *) return 1 ;; esac ;;
+    *)      case "$1" in "$2"*) return 0 ;; *) return 1 ;; esac ;;
+  esac
+}
 
 VIOLATIONS=0; APPEND_BAD=0; OK=0
 

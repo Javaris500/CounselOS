@@ -79,9 +79,9 @@ GET    /v1/transactions/:id/access      — who can see this matter
     "code": "MATTER_ACCESS_DENIED",
     "message": "You don't have access to this matter.",
     "details": {
-      "reason": "NOT_ASSIGNED",
-      "assignedAttorney": "James Okafor",
-      "requestAccessFrom": "James Okafor"
+      "reason": ["NOT_ASSIGNED"],
+      "assignedAttorney": ["James Okafor"],
+      "requestAccessFrom": ["James Okafor"]
     }
   }
 }
@@ -90,6 +90,14 @@ GET    /v1/transactions/:id/access      — who can see this matter
 Frontend renders: *"This matter is assigned to James Okafor. Ask them for access."* — with a button that requests it. Never a bare "Access denied."
 
 Reason codes: `NOT_ASSIGNED`, `READ_ONLY_ROLE`, `ACCESS_EXPIRED`, `ROLE_INSUFFICIENT`.
+
+> **Values are arrays of one, and that is deliberate** (corrected 2026-08-23). `ApiError.details` is
+> typed `Record<string, string[]>` in `packages/shared/src/types/api.ts`, because its primary job is
+> field-level validation where one field can carry several messages. This example previously showed
+> flat strings — a shape no client could ever receive. Widening the type to `string[] | string` was
+> rejected: it would force every consumer (the toast, `applyServerErrors`, the access banner) to
+> handle two shapes forever to save one pair of brackets here. The doc was wrong, not the type.
+> Found by the transactions agent; logged in `.team-5/shared/contract-drift.md`.
 
 ---
 

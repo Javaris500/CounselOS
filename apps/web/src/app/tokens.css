@@ -1,0 +1,464 @@
+/* ===========================================================================
+   CounselOS — Design Tokens v5
+   Single source of truth. Every value in the system resolves from here.
+
+   Layers:
+     1. Primitives  — raw ramps and scales. Never used directly in components.
+     2. Semantic    — role tokens (surface, ink, line, status). Use these.
+     3. Component   — per-component contracts built from semantic tokens.
+     4. Themes      — [data-theme="dark"] remaps layer 2 only.
+
+   Rule: components read layer 2 and 3. If a component needs a primitive
+   directly, the semantic layer is missing a token — add it here instead.
+   =========================================================================== */
+
+:root {
+
+  /* ------------------------------------------------------------------------
+     1 · PRIMITIVES — RAMPS
+     Perceptually even steps. Slate is structure and primary action, never
+     status. Sage means filed/complete only. Bone is the paper stock.
+     --------------------------------------------------------------------- */
+
+  /* Slate — navigation, structure, primary action */
+  --cos-slate-50:  #EAEFF3;
+  --cos-slate-100: #CDD8E1;
+  --cos-slate-200: #A3B2BF;
+  --cos-slate-300: #78899A;
+  --cos-slate-400: #5A6B7D;
+  --cos-slate-500: #455565;  /* ★ dark-mode base */
+  --cos-slate-600: #374553;
+  --cos-slate-700: #2A3542;  /* ★ light-mode base */
+  --cos-slate-800: #1E2731;
+  --cos-slate-900: #141A21;
+  --cos-slate-950: #0D1116;
+
+  /* Sage — received, completed, paid, closed, filed */
+  --cos-sage-50:  #EEF3EC;
+  --cos-sage-100: #DFEADB;
+  --cos-sage-200: #C2D6BC;
+  --cos-sage-300: #9DB995;
+  --cos-sage-400: #7A9B70;
+  --cos-sage-500: #5E8156;  /* ★ dark-mode base */
+  --cos-sage-600: #4B6A44;  /* ★ light-mode base */
+  --cos-sage-700: #3A5334;
+  --cos-sage-800: #22331E;
+  --cos-sage-900: #1B2916;
+
+  /* Bone — the paper stock and its warm neutrals */
+  --cos-bone-card:  #FAF9F6;
+  --cos-bone-paper: #F0EEE9;
+  --cos-bone-inset: #E6E3DC;
+  --cos-bone-line:  #DAD6CE;
+  --cos-bone-line-strong: #C2BDB3;
+  --cos-bone-ghost: #9C9A94;
+
+  /* Graphite — dark-mode shell values (slate undertone, never violet) */
+  --cos-graphite-well:    #0B0C0E;
+  --cos-graphite-shell:   #16181B;
+  --cos-graphite-card:    #1E2126;
+  --cos-graphite-raised:  #272B31;
+  --cos-graphite-overlay: #2E333A;
+  --cos-graphite-line:    #2B2F35;
+  --cos-graphite-line-strong: #3A4048;
+
+  /* Ink — four steps, light */
+  --cos-ink-900: #1B1D1E;  /* 15.6:1 */
+  --cos-ink-700: #494F53;  /*  8.3:1 */
+  --cos-ink-500: #6E7479;  /*  4.9:1 on card · 4.1:1 on paper */
+  --cos-ink-300: #9C9A94;  /*  2.7:1 — overlines and disabled only */
+
+  /* Ink — four steps, dark */
+  --cos-ink-bright:   #F1F3F4;  /* 14.6:1 */
+  --cos-ink-d-700:    #A2A9AF;  /*  6.9:1 */
+  --cos-ink-d-500:    #7B8288;  /*  4.6:1 AA */
+  --cos-ink-d-300:    #4C5258;  /*  2.2:1 — overlines and disabled only */
+
+  /* Urgency ladder — hue AND value AND label. Never hue alone. */
+  --cos-urgency-info-light:     #5A6B7D;
+  --cos-urgency-warning-light:  #8A5E12;
+  --cos-urgency-urgent-light:   #B14A22;
+  --cos-urgency-critical-light: #A62230;
+  --cos-urgency-info-dark:      #78899A;
+  --cos-urgency-warning-dark:   #D19A3C;
+  --cos-urgency-urgent-dark:    #E2794E;
+  --cos-urgency-critical-dark:  #E4636F;
+
+  /* Critical wash — the only tinted row background in the system */
+  --cos-critical-wash-light:  #FAEDEE;
+  --cos-critical-line-light:  #E3BEC3;
+  --cos-critical-wash-dark:   #241B1D;
+  --cos-critical-line-dark:   #3B2A2D;
+
+  /* AI teal — one treatment: a 2px left rule plus one labelled mark */
+  --cos-teal-light: #0A5C69;
+  --cos-teal-light-hover: #084B55;
+  --cos-teal-dark:  #3FAAB8;
+
+
+  /* ------------------------------------------------------------------------
+     1 · PRIMITIVES — SCALES
+     --------------------------------------------------------------------- */
+
+  /* Spacing — 4pt grid, nine steps */
+  --cos-space-0-5: 2px;   /* optical only: badge vertical inset */
+  --cos-space-1:   4px;   /* icon to label, badge inner */
+  --cos-space-1-5: 6px;   /* optical only: dense table rows */
+  --cos-space-2:   8px;   /* related controls, chip gaps */
+  --cos-space-3:  12px;   /* compact card padding, cell padding */
+  --cos-space-4:  16px;   /* default card padding, grid gap */
+  --cos-space-5:  20px;   /* comfortable card padding */
+  --cos-space-6:  24px;   /* section gutter, drawer padding */
+  --cos-space-8:  32px;   /* page gutter, block separation */
+  --cos-space-10: 40px;   /* between major sections */
+  --cos-space-14: 56px;   /* page top, client-page rhythm */
+
+  /* Radius — assigned by element size. Full belongs to circles only. */
+  --cos-radius-xs:   2px;  /* checkbox, progress track, tag */
+  --cos-radius-sm:   4px;  /* buttons, inputs, badges, chips */
+  --cos-radius-md:   6px;  /* cards, menus, tooltips, tables */
+  --cos-radius-lg:   8px;  /* modals, drawers, command palette */
+  --cos-radius-full: 999px;/* status dots, avatars, switch track */
+
+  /* Type families */
+  --cos-font-serif: Newsreader, Georgia, serif;
+  --cos-font-sans:  Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+  --cos-font-mono:  'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  /* Type roles — eight, no more. Nothing below 10px. */
+  --cos-type-display-size: 40px;
+  --cos-type-display-line: 1.06;
+  --cos-type-display-track: -0.6px;
+  --cos-type-display-weight: 400;
+
+  --cos-type-title-size: 26px;
+  --cos-type-title-line: 1.15;
+  --cos-type-title-track: -0.4px;
+  --cos-type-title-weight: 400;
+
+  --cos-type-heading-size: 17px;   /* serif floor — never below this */
+  --cos-type-heading-line: 1.3;
+  --cos-type-heading-track: -0.2px;
+  --cos-type-heading-weight: 400;
+
+  --cos-type-subhead-size: 15px;
+  --cos-type-subhead-line: 1.4;
+  --cos-type-subhead-weight: 600;
+
+  --cos-type-body-size: 13px;
+  --cos-type-body-line: 1.55;
+  --cos-type-body-weight: 400;
+
+  --cos-type-interface-size: 12px;
+  --cos-type-interface-line: 1.45;
+  --cos-type-interface-weight: 500;
+
+  --cos-type-caption-size: 11px;
+  --cos-type-caption-line: 1.45;
+  --cos-type-caption-weight: 400;
+
+  --cos-type-overline-size: 10px;
+  --cos-type-overline-line: 1.4;
+  --cos-type-overline-track: 0.14em;
+  --cos-type-overline-weight: 600;
+
+  --cos-type-data-size: 12px;
+  --cos-type-data-numeric: tabular-nums;  /* mono is tabular everywhere */
+
+  /* Measure */
+  --cos-measure-prose: 68ch;
+  --cos-measure-note:  74ch;
+  --cos-measure-tight: 60ch;
+
+  /* Motion — four durations. Motion reports state, never decorates. */
+  --cos-duration-tint:      80ms;   /* hover washes, border shifts */
+  --cos-duration-state:    140ms;   /* selection, checkbox, tab underline, focus */
+  --cos-duration-enter:    240ms;   /* drawers, modals, menus arriving */
+  --cos-duration-exit:     160ms;   /* the same, leaving */
+  --cos-duration-reconcile:320ms;   /* optimistic row confirming */
+
+  --cos-ease-out:        cubic-bezier(0.2, 0, 0, 1);
+  --cos-ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --cos-ease-settle:     cubic-bezier(0.3, 0, 0.2, 1);
+
+  /* Density — two modes off one scale */
+  --cos-row-compact:      32px;  /* attorney surfaces */
+  --cos-row-comfortable:  48px;  /* client surfaces */
+  --cos-row-pad-compact:      var(--cos-space-3);
+  --cos-row-pad-comfortable:  var(--cos-space-5);
+  --cos-hit-min:       32px;
+  --cos-hit-min-touch: 44px;
+
+
+  /* ------------------------------------------------------------------------
+     2 · SEMANTIC — LIGHT (default)
+     --------------------------------------------------------------------- */
+
+  /* Surfaces — solid shell, cards are the only lift */
+  --cos-surface-shell:   var(--cos-bone-paper);
+  --cos-surface-card:    var(--cos-bone-card);
+  --cos-surface-inset:   var(--cos-bone-inset);
+  --cos-surface-raised:  var(--cos-bone-card);
+  --cos-surface-overlay: var(--cos-bone-card);
+  --cos-surface-well:    var(--cos-bone-inset);
+  --cos-backdrop: rgba(27, 29, 30, 0.36);
+
+  /* Lines */
+  --cos-line:        var(--cos-bone-line);
+  --cos-line-strong: var(--cos-bone-line-strong);
+  --cos-line-subtle: var(--cos-bone-inset);
+
+  /* Ink */
+  --cos-text:           var(--cos-ink-900);
+  --cos-text-secondary: var(--cos-ink-700);
+  --cos-text-muted:     var(--cos-ink-500);
+  --cos-text-ghost:     var(--cos-ink-300);
+  --cos-text-on-slate:  #FFFFFF;
+
+  /* Action */
+  --cos-action:          var(--cos-slate-700);
+  --cos-action-hover:    var(--cos-slate-800);
+  --cos-action-active:   var(--cos-slate-900);
+  --cos-action-subtle:   var(--cos-slate-50);
+  --cos-focus-ring:      var(--cos-slate-700);
+  --cos-focus-ring-width: 2px;
+  --cos-focus-ring-offset: 2px;
+
+  /* Status */
+  --cos-status-filed:    var(--cos-sage-600);
+  --cos-status-filed-bg: var(--cos-sage-50);
+  --cos-urgency-info:     var(--cos-urgency-info-light);
+  --cos-urgency-warning:  var(--cos-urgency-warning-light);
+  --cos-urgency-urgent:   var(--cos-urgency-urgent-light);
+  --cos-urgency-critical: var(--cos-urgency-critical-light);
+  --cos-urgency-critical-bg:   var(--cos-critical-wash-light);
+  --cos-urgency-critical-line: var(--cos-critical-line-light);
+  --cos-destructive: var(--cos-urgency-critical-light);  /* shares crimson — no fifth red */
+
+  /* AI */
+  --cos-ai:       var(--cos-teal-light);
+  --cos-ai-hover: var(--cos-teal-light-hover);
+  --cos-ai-rule-width: 2px;
+
+  /* Elevation — light: borders first, shadow second. A whisper, never a drop. */
+  --cos-shadow-none: none;
+  --cos-shadow-sm: 0 1px 2px rgba(27, 29, 30, 0.06);
+  --cos-shadow-md: 0 4px 12px rgba(27, 29, 30, 0.10);
+  --cos-shadow-lg: 0 12px 32px rgba(27, 29, 30, 0.14);
+
+  /* Layer contracts — nothing may skip a layer */
+  --cos-l0-bg: var(--cos-surface-shell);
+  --cos-l0-border: none;
+  --cos-l0-shadow: var(--cos-shadow-none);
+
+  --cos-l1-bg: var(--cos-surface-card);
+  --cos-l1-border: 1px solid var(--cos-line);
+  --cos-l1-shadow: var(--cos-shadow-none);
+
+  --cos-l2-bg: var(--cos-surface-card);
+  --cos-l2-border: 1px solid var(--cos-line-strong);
+  --cos-l2-shadow: var(--cos-shadow-sm);
+
+  --cos-l3-bg: var(--cos-surface-overlay);
+  --cos-l3-border: 1px solid var(--cos-line-strong);
+  --cos-l3-shadow: var(--cos-shadow-md);
+
+  --cos-l4-bg: var(--cos-surface-overlay);
+  --cos-l4-border: 1px solid var(--cos-line-strong);
+  --cos-l4-shadow: var(--cos-shadow-lg);
+
+  /* Interaction washes */
+  --cos-wash-hover:    var(--cos-bone-inset);
+  --cos-wash-selected: var(--cos-slate-50);
+  --cos-wash-active:   var(--cos-bone-line);
+  --cos-opacity-disabled: 0.45;
+
+
+  /* ------------------------------------------------------------------------
+     3 · COMPONENT
+     --------------------------------------------------------------------- */
+
+  /* Button — 4px radius, never a pill on desktop */
+  --cos-button-radius: var(--cos-radius-sm);
+  --cos-button-height: 32px;
+  --cos-button-height-lg: 40px;
+  --cos-button-pad-x: var(--cos-space-3);
+  --cos-button-font: var(--cos-type-interface-size);
+  --cos-button-weight: var(--cos-type-interface-weight);
+
+  /* Input — filled on mobile, bordered on desktop */
+  --cos-input-radius: var(--cos-radius-sm);
+  --cos-input-height: 32px;
+  --cos-input-height-touch: 44px;
+  --cos-input-bg: var(--cos-surface-card);
+  --cos-input-bg-filled: var(--cos-surface-inset);
+  --cos-input-border: 1px solid var(--cos-line-strong);
+
+  /* Card */
+  --cos-card-radius: var(--cos-radius-md);
+  --cos-card-pad: var(--cos-space-4);
+  --cos-card-pad-compact: var(--cos-space-3);
+  --cos-card-pad-comfortable: var(--cos-space-5);
+
+  /* Table */
+  --cos-table-radius: var(--cos-radius-md);
+  --cos-table-header-bg: var(--cos-surface-inset);
+  --cos-table-row-line: 1px solid var(--cos-line-subtle);
+  --cos-table-cell-pad-y: var(--cos-space-2);
+  --cos-table-cell-pad-x: var(--cos-space-3);
+
+  /* Modal & drawer */
+  --cos-modal-radius: var(--cos-radius-lg);
+  --cos-modal-pad: var(--cos-space-6);
+
+  /* Badge & tag */
+  --cos-badge-radius: var(--cos-radius-sm);
+  --cos-tag-radius: var(--cos-radius-xs);
+  --cos-badge-pad: var(--cos-space-0-5) var(--cos-space-2);
+
+  /* Mobile overrides — pills belong to touch surfaces only */
+  --cos-mobile-control-radius: var(--cos-radius-full);
+  --cos-mobile-card-radius: var(--cos-radius-md);
+  --cos-mobile-card-border: none;
+  --cos-mobile-card-shadow: var(--cos-shadow-sm);
+  --cos-mobile-bar-bg: rgba(240, 238, 233, 0.86);
+  --cos-mobile-bar-blur: 12px;
+
+  /* Icons */
+  --cos-icon-size: 16px;
+  --cos-icon-size-sm: 13px;
+  --cos-icon-stroke: 2;
+}
+
+
+/* ===========================================================================
+   4 · DARK THEME — remaps the semantic layer only.
+   Surface value does the work; shadow separates overlays from what they cover.
+   =========================================================================== */
+
+[data-theme="dark"] {
+  --cos-surface-shell:   var(--cos-graphite-shell);
+  --cos-surface-card:    var(--cos-graphite-card);
+  --cos-surface-inset:   var(--cos-graphite-raised);
+  --cos-surface-raised:  var(--cos-graphite-raised);
+  --cos-surface-overlay: var(--cos-graphite-overlay);
+  --cos-surface-well:    var(--cos-graphite-well);
+  --cos-backdrop: rgba(0, 0, 0, 0.6);
+
+  --cos-line:        var(--cos-graphite-line);
+  --cos-line-strong: var(--cos-graphite-line-strong);
+  --cos-line-subtle: var(--cos-graphite-line);
+
+  --cos-text:           var(--cos-ink-bright);
+  --cos-text-secondary: var(--cos-ink-d-700);
+  --cos-text-muted:     var(--cos-ink-d-500);
+  --cos-text-ghost:     var(--cos-ink-d-300);
+  --cos-text-on-slate:  var(--cos-ink-900);
+
+  --cos-action:        var(--cos-slate-500);
+  --cos-action-hover:  var(--cos-slate-400);
+  --cos-action-active: var(--cos-slate-600);
+  --cos-action-subtle: var(--cos-slate-800);
+  --cos-focus-ring:    var(--cos-slate-300);
+
+  --cos-status-filed:    var(--cos-sage-500);
+  --cos-status-filed-bg: var(--cos-sage-900);
+  --cos-urgency-info:     var(--cos-urgency-info-dark);
+  --cos-urgency-warning:  var(--cos-urgency-warning-dark);
+  --cos-urgency-urgent:   var(--cos-urgency-urgent-dark);
+  --cos-urgency-critical: var(--cos-urgency-critical-dark);
+  --cos-urgency-critical-bg:   var(--cos-critical-wash-dark);
+  --cos-urgency-critical-line: var(--cos-critical-line-dark);
+  --cos-destructive: var(--cos-urgency-critical-dark);
+
+  --cos-ai:       var(--cos-teal-dark);
+  --cos-ai-hover: var(--cos-teal-dark);
+
+  --cos-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --cos-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
+  --cos-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+  --cos-l2-bg: var(--cos-surface-raised);
+  --cos-l3-bg: var(--cos-surface-overlay);
+  --cos-l4-bg: var(--cos-surface-overlay);
+
+  --cos-wash-hover:    var(--cos-graphite-raised);
+  --cos-wash-selected: var(--cos-slate-800);
+  --cos-wash-active:   var(--cos-graphite-overlay);
+
+  --cos-input-bg: var(--cos-graphite-raised);
+  --cos-input-bg-filled: var(--cos-graphite-raised);
+  --cos-table-header-bg: var(--cos-graphite-raised);
+  --cos-mobile-bar-bg: rgba(22, 24, 27, 0.86);
+}
+
+/* ===========================================================================
+   4b · DARK THEME — SYSTEM DEFAULT
+
+   Added by Foundations, 2026-08-23. The block above fires only on an explicit
+   [data-theme="dark"] stamp, so a viewer whose OS is dark and who has never
+   touched a toggle would have received the LIGHT values. Three states, not two:
+   explicit dark, explicit light, and unset — and unset is the common one.
+
+   :not([data-theme="light"]) so an explicit light choice still beats a dark OS.
+   Values are the same remaps as above; if you change one, change both.
+   =========================================================================== */
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --cos-surface-shell:   var(--cos-graphite-shell);
+    --cos-surface-card:    var(--cos-graphite-card);
+    --cos-surface-inset:   var(--cos-graphite-raised);
+    --cos-surface-raised:  var(--cos-graphite-raised);
+    --cos-surface-overlay: var(--cos-graphite-overlay);
+    --cos-surface-well:    var(--cos-graphite-well);
+    --cos-backdrop: rgba(0, 0, 0, 0.6);
+  
+    --cos-line:        var(--cos-graphite-line);
+    --cos-line-strong: var(--cos-graphite-line-strong);
+    --cos-line-subtle: var(--cos-graphite-line);
+  
+    --cos-text:           var(--cos-ink-bright);
+    --cos-text-secondary: var(--cos-ink-d-700);
+    --cos-text-muted:     var(--cos-ink-d-500);
+    --cos-text-ghost:     var(--cos-ink-d-300);
+    --cos-text-on-slate:  var(--cos-ink-900);
+  
+    --cos-action:        var(--cos-slate-500);
+    --cos-action-hover:  var(--cos-slate-400);
+    --cos-action-active: var(--cos-slate-600);
+    --cos-action-subtle: var(--cos-slate-800);
+    --cos-focus-ring:    var(--cos-slate-300);
+  
+    --cos-status-filed:    var(--cos-sage-500);
+    --cos-status-filed-bg: var(--cos-sage-900);
+    --cos-urgency-info:     var(--cos-urgency-info-dark);
+    --cos-urgency-warning:  var(--cos-urgency-warning-dark);
+    --cos-urgency-urgent:   var(--cos-urgency-urgent-dark);
+    --cos-urgency-critical: var(--cos-urgency-critical-dark);
+    --cos-urgency-critical-bg:   var(--cos-critical-wash-dark);
+    --cos-urgency-critical-line: var(--cos-critical-line-dark);
+    --cos-destructive: var(--cos-urgency-critical-dark);
+  
+    --cos-ai:       var(--cos-teal-dark);
+    --cos-ai-hover: var(--cos-teal-dark);
+  
+    --cos-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --cos-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.5);
+    --cos-shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  
+    --cos-l2-bg: var(--cos-surface-raised);
+    --cos-l3-bg: var(--cos-surface-overlay);
+    --cos-l4-bg: var(--cos-surface-overlay);
+  
+    --cos-wash-hover:    var(--cos-graphite-raised);
+    --cos-wash-selected: var(--cos-slate-800);
+    --cos-wash-active:   var(--cos-graphite-overlay);
+  
+    --cos-input-bg: var(--cos-graphite-raised);
+    --cos-input-bg-filled: var(--cos-graphite-raised);
+    --cos-table-header-bg: var(--cos-graphite-raised);
+    --cos-mobile-bar-bg: rgba(22, 24, 27, 0.86);
+  }
+}
+
