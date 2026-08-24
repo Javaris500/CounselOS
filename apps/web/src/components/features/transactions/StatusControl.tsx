@@ -50,7 +50,22 @@ export function StatusControl({
 
   const [pending, setPending] = useState<TransactionStatus | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [rejection, setRejection] = useState<{ message: string; allowed: string[] } | null>(null);
+  const [rejection, setRejection] = useState<{
+    message: string;
+    allowed: string[];
+    /**
+     * The origin state ACCORDING TO THE SERVER, not to this component.
+     *
+     * `transaction.status` is necessarily stale here — a stale view is the only
+     * way a browser can request an illegal transition at all, since the control
+     * never offers a move the server did not call legal. Composing the hint
+     * from it paired the local origin with the server's allowed list, so the
+     * two halves of one sentence described two different matters and the banner
+     * stated a transition rule that does not exist. See
+     * `.team-5/findings/nemi-slice-1-findings.md` finding 2.
+     */
+    from?: string;
+  } | null>(null);
   const [outcomeReason, setOutcomeReason] = useState('');
   const [outcomeNotes, setOutcomeNotes] = useState('');
   const [outcomeError, setOutcomeError] = useState<string | undefined>(undefined);
@@ -77,6 +92,7 @@ export function StatusControl({
         setRejection({
           message: error.message,
           allowed: error.details?.allowedTransitions ?? [],
+          from: error.details?.from?.[0],
         });
         reset();
       } else if (error instanceof ApiError && error.fieldErrors.outcomeReason) {
@@ -136,14 +152,24 @@ export function StatusControl({
         THE HARD STOP MADE VISIBLE. A refused transition explains itself and
         offers what IS legal, rather than a toast saying it failed.
       */}
-      {rejection === null ? null : (
+      {rejection === null ? null : (() => {
+        // The server's origin when it sent one; the local status only as a last
+        // resort, which is the pre-fix behaviour and is wrong whenever the view
+        // is stale. `from` is always present on INVALID_STATUS_TRANSITION
+        // (transactions.service.ts) — the fallback exists so a future error
+        // shape cannot blank the sentence.
+        const rejectionFrom =
+          STATUS_LABELS[(rejection.from ?? transaction.status) as TransactionStatus] ??
+          rejection.from ??
+          STATUS_LABELS[transaction.status];
+        return (
         <div className={styles.rejection} role="alert" data-testid="transaction-status-rejected">
           <p className={styles.rejectionMessage}>{rejection.message}</p>
           {rejection.allowed.length === 0 ? (
             <p className={styles.rejectionHint}>There are no transitions available from here.</p>
           ) : (
             <p className={styles.rejectionHint}>
-              From {STATUS_LABELS[transaction.status]} this matter can move to{' '}
+              From {rejectionFrom} this matter can move to{' '}
               <strong>
                 {rejection.allowed
                   .map((s) => STATUS_LABELS[s as TransactionStatus] ?? s)
@@ -153,7 +179,8 @@ export function StatusControl({
             </p>
           )}
         </div>
-      )}
+        );
+      })()}
 
       <Dialog
         open={terminalPending}
