@@ -1,3 +1,22 @@
+/**
+ * TOKENS ARE IMPORTED FIRST, DELIBERATELY.
+ *
+ * `tokens.css` is the --cos-* system (Design Tokens v5): primitives, semantic,
+ * component, both dark paths. It is ADDITIVE — every name it defines is
+ * --cos-prefixed, so nothing below is re-pointed and no existing colour can
+ * change. New work should read --cos-*; the unprefixed tokens below remain the
+ * live system until the migration lands.
+ *
+ * Importing first means globals.css wins any tie, which is why the import is
+ * safe to add before the migration rather than after.
+ *
+ * MIGRATION (option 2, after slice 1 merges): repoint the ~140 unprefixed
+ * tokens at their --cos-* equivalents and delete them. 84 map cleanly; 16 have
+ * no counterpart and need a decision each. Not done now because it would
+ * collide with 388 var() uses on an unmerged branch.
+ */
+@import './tokens.css';
+
 /*
  * DESIGN SYSTEM v5 — "Paper & Ink"
  * The machine-readable canon. Every value here is transcribed from

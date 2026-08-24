@@ -23,7 +23,10 @@
 # See SURPRISES.md 002 and 004.
 
 set -uo pipefail
-cd "$(dirname "$0")/.."
+
+# Same reasoning as check-mounts.sh: report on the tree you are standing in.
+REPO="$(git rev-parse --show-toplevel 2>/dev/null)" || { echo "not inside a git repository"; exit 2; }
+cd "$REPO"
 
 FAIL=0
 red()  { printf '\033[31m%s\033[0m\n' "$*"; }

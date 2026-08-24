@@ -12,6 +12,13 @@ export const FIELD_LIMITS = {
   MATTER_NOTE: 2_000,
   /** Communication log summary — deliberately short to keep logging fast. */
   COMMUNICATION_SUMMARY: 500,
+  /**
+   * Why a matter closed, in the attorney's words. Optional prose beside the
+   * required `outcome_reason` enum (05 §3C). Captured at the transition and
+   * unrecoverable afterwards (16 §2.3), so it is short on purpose — a field
+   * nobody fills is worse than a field with a low ceiling.
+   */
+  OUTCOME_NOTES: 500,
 } as const;
 
 /** Upload gates, applied in order: MIME whitelist → magic bytes → size (05 §4). */
