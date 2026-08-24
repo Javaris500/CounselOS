@@ -69,7 +69,7 @@ No `utils/`, `helpers/`, or `services/` folder outside modules. No hand-written 
 - **Enums, error codes, SSE event types, field limits, and shared Zod schemas live in `packages/shared`.** Both apps import them, so they cannot drift. Never redefine one locally.
 - **Any data-shape change ships with a migration.** drizzle-kit generates; HNSW and partial-unique indexes are hand-written SQL migrations.
 - **DTOs are Zod schemas with inferred types** — validation, typing, and OpenAPI from one definition. Canonical schema in `packages/shared`, wrapped by `createZodDto()` from `nestjs-zod` so controllers and Swagger reference the same object. **`class-validator` and `class-transformer` are never installed.**
-- **`process.env` is read in exactly three files:** `instrument.ts` (runs before DI exists), `config/env.validation.ts` (owns the environment boundary), and `drizzle.config.ts` (runs outside Nest entirely). Everything else goes through `ConfigService`. ESLint enforces this.
+- **`process.env` is read in exactly five files:** `instrument.ts` (runs before DI exists), `config/env.validation.ts` (owns the environment boundary), `drizzle.config.ts` (drizzle-kit runs outside Nest entirely), and `database/seed.ts` / `database/reset.ts` (standalone CLI scripts with no container to inject from). Everything else goes through `ConfigService`. **The exempt list in `packages/config/eslint/nest.js` is the source of truth** — it is what runs, and adding to it is a deliberate decision, not a convenience.
 
 ## Error Handling
 

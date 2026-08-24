@@ -61,7 +61,7 @@ export const nest = tseslint.config(
           // 18 §9 — one validated boundary, so a missing var fails at boot.
           selector: "MemberExpression[object.object.name='process'][object.property.name='env']",
           message:
-            'Read config through ConfigService.getOrThrow() (18 §9). process.env is allowed only in instrument.ts and config/env.validation.ts.',
+            'Read config through ConfigService.getOrThrow() (18 §9). process.env is allowed only in the files exempted at the bottom of this config: instrument.ts, config/env.validation.ts, drizzle.config.ts, database/seed.ts, database/reset.ts.',
         },
         {
           selector: "NewExpression[callee.name='Date'][arguments.length=0]",
