@@ -2,7 +2,11 @@ import { HttpStatus, Injectable } from '@nestjs/common';
 import { ERROR_CODES, STAFF_ROLES, type AuthUser, type UserRole } from '@counselos/shared';
 
 import { Clock } from '../../common/clock';
-import { AppException, NotFoundException } from '../../common/errors/app.exception';
+import {
+  AppException,
+  NotFoundException,
+  UnprocessableException,
+} from '../../common/errors/app.exception';
 import { EVENT_TYPES } from '../../common/events/event-types';
 import { ActivityLogService } from './activity-log.service';
 import {
@@ -12,15 +16,25 @@ import {
 } from './matter-access.repository';
 import type { ListScope } from './transactions.repository';
 
-/** What a route may require. Writes need FULL; GETs accept READ_ONLY (8G). */
+/** What the ladder can DECIDE. Two answers, and only two. */
 export type AccessLevel = 'FULL' | 'READ_ONLY';
 
-/** The four reason codes from 13-adoption-features.md §1. */
+/**
+ * What a route can REQUIRE — a superset of what the ladder decides.
+ *
+ * Writes need FULL; GETs accept READ_ONLY. `MANAGE_ACCESS` is narrower than
+ * FULL and is not a rung: it is the question 13 §1 asks of the two grant
+ * routes, answered after the ladder has already granted FULL.
+ */
+export type RequiredAccess = AccessLevel | 'MANAGE_ACCESS';
+
+/** The reason codes from 13-adoption-features.md §1. */
 export type DenialReason =
   | 'NOT_ASSIGNED'
   | 'READ_ONLY_ROLE'
   | 'ACCESS_EXPIRED'
-  | 'ROLE_INSUFFICIENT';
+  | 'ROLE_INSUFFICIENT'
+  | 'NOT_MATTER_ATTORNEY';
 
 export type AccessDecision =
   | { granted: true; level: AccessLevel }
@@ -86,7 +100,7 @@ export class MatterAccessService {
   async authorize(
     user: AuthUser,
     transactionId: string,
-    required: AccessLevel,
+    required: RequiredAccess,
   ): Promise<MatterAccessContext> {
     const context = await this.repository.loadContext(user.firmId, transactionId, user.id);
     if (context === undefined) {
@@ -96,11 +110,46 @@ export class MatterAccessService {
     const decision = this.resolve(user, context);
 
     if (!decision.granted) throw this.denial(decision.reason, context);
-    if (required === 'FULL' && decision.level === 'READ_ONLY') {
+    if (decision.level === 'READ_ONLY' && required !== 'READ_ONLY') {
       throw this.denial('READ_ONLY_ROLE', context);
     }
 
+    /**
+     * FULL IS NOT "MAY CHANGE WHO ELSE HAS ACCESS".
+     *
+     * The ladder grants FULL to five populations: OWNER, the assigned
+     * attorney, the assigned PARALEGAL, anyone holding a live grant, and
+     * anyone who becomes one of those. 13 §1 scopes granting to two of them —
+     * "OWNER, or the assigned attorney" — so gating the grant routes on FULL
+     * was strictly wider than the rule it claimed to implement.
+     *
+     * What that cost, confirmed against the real stack in review 2026-08-24:
+     * an assigned paralegal could hand a matter to anyone at the firm, and a
+     * two-week coverage grant could POST a grant for its own holder with no
+     * `expiresAt` — turning a time-boxed permission permanent, which is
+     * precisely what `grant-access.dto.ts` says the expiry exists to prevent.
+     *
+     * Checked HERE rather than in the handler so it sits beside the ladder it
+     * narrows, in the file an access-control reviewer is told to read first.
+     */
+    if (required === 'MANAGE_ACCESS' && !this.mayManageAccess(user, context)) {
+      throw this.denial('NOT_MATTER_ATTORNEY', context);
+    }
+
     return context;
+  }
+
+  /**
+   * "OWNER, or the attorney this matter is assigned to" (13 §1).
+   *
+   * The OWNER comparison is a firm-wide role rule, the same one rung 1 makes.
+   * The other half is an id comparison against THIS matter's assignment
+   * column — deliberately not `role === 'ATTORNEY'`, which would let every
+   * attorney at the firm re-grant a matter they only have cover on.
+   */
+  private mayManageAccess(user: AuthUser, context: MatterAccessContext): boolean {
+    if (user.role === 'OWNER') return true; // commit-check-exempt: 13 §1 names OWNER explicitly alongside the assigned attorney; a firm-wide role rule, and the assignment comparison is on the next line
+    return context.assignedAttorneyId === user.id;
   }
 
   /** The ladder itself. Pure — no I/O, so it unit-tests at every rung. */
@@ -179,7 +228,9 @@ export class MatterAccessService {
    */
   listScope(user: AuthUser): ListScope {
     if (user.role === 'OWNER' || user.role === 'ATTORNEY') return { kind: 'ALL' }; // commit-check-exempt: 8G — OWNER sees everything and ATTORNEY has firm-wide read cover (13 §1); everyone else falls to the assignment predicate below
-    return { kind: 'ASSIGNED_OR_GRANTED', userId: user.id };
+    // `asOf` from the same Clock `resolve()` uses, so the list and the detail
+    // route cannot disagree about when a grant lapsed.
+    return { kind: 'ASSIGNED_OR_GRANTED', userId: user.id, asOf: this.clock.now() };
   }
 
   /**
@@ -202,6 +253,7 @@ export class MatterAccessService {
       READ_ONLY_ROLE: `You have read-only cover on this matter. ${context.assignedAttorneyName} can give you full access.`,
       ACCESS_EXPIRED: `Your access to this matter has expired. ${context.assignedAttorneyName} can renew it.`,
       ROLE_INSUFFICIENT: 'Your account cannot open firm matters.',
+      NOT_MATTER_ATTORNEY: `Only ${context.assignedAttorneyName} or a firm owner can change who has access to this matter.`,
     };
 
     return new MatterAccessDeniedException(messages[reason], {
@@ -249,14 +301,34 @@ export class MatterAccessService {
   }
 
   /**
-   * Grant access. The caller already holds FULL on this matter (the guard saw
-   * to that), which is what "OWNER or the assigned attorney" resolves to.
+   * Grant access. The guard has already established that the caller is the
+   * OWNER or this matter's assigned attorney (`MANAGE_ACCESS`) — not merely
+   * that they hold FULL, which is a wider set and was the bug.
    */
   async grant(
     user: AuthUser,
     context: MatterAccessContext,
     input: { userId: string; expiresAt?: string },
   ): Promise<MatterAccessGrantRow[]> {
+    /**
+     * NOBODY GRANTS THEMSELVES.
+     *
+     * Redundant against `MANAGE_ACCESS` today — the two callers who pass that
+     * check already hold FULL by role or assignment, so a self-grant would buy
+     * them nothing. It is here because the shape is what made the escalation
+     * possible: `grant()` upserts on (transaction_id, user_id) and overwrites
+     * `expires_at`, so a holder who can call it at all can erase their own
+     * expiry. Refusing the self case closes that permanently rather than
+     * leaving it to depend on the level rule above staying narrow.
+     */
+    if (input.userId === user.id) {
+      throw new UnprocessableException(
+        'You already have access to this matter — a grant is for a colleague.',
+        ERROR_CODES.VALIDATION_ERROR,
+        { userId: ['Choose a colleague other than yourself.'] },
+      );
+    }
+
     const grantee = await this.assertActiveFirmMember(user.firmId, input.userId);
 
     await this.repository.grant({

@@ -1181,12 +1181,26 @@ Firm-wide-by-role is too coarse for a real firm. Full spec in `13-adoption-featu
 - [ ] `matter_access` table — transaction_id, firm_id, user_id, granted_by_id, expires_at. Unique on (transaction_id, user_id).
 - [ ] `MatterAccessGuard` runs AFTER `RolesGuard` on every transaction-scoped route. One guard, not scattered checks.
 - [ ] Resolution order: OWNER → FULL · assigned_attorney_id → FULL · assigned_paralegal_id → FULL · matter_access row (unexpired) → FULL · role ATTORNEY → READ_ONLY · else DENIED
-- [ ] `@MatterAccess('FULL' | 'READ_ONLY')` decorator on endpoints. Writes require FULL; GETs accept READ_ONLY.
+- [ ] `@MatterAccess('FULL' | 'READ_ONLY' | 'MANAGE_ACCESS')` decorator on endpoints. Writes require FULL; GETs accept READ_ONLY.
 - [ ] PARALEGAL sees ONLY assigned/granted matters — no read-only fallback
-- [ ] `POST /v1/transactions/:id/access` — grant (OWNER or assigned attorney)
-- [ ] `DELETE /v1/transactions/:id/access/:userId` — revoke
-- [ ] `GET /v1/transactions/:id/access` — who can see this matter
-- [ ] **Permission errors explain themselves.** `MATTER_ACCESS_DENIED` returns `details: { reason, assignedAttorney, requestAccessFrom }`. Reason codes: `NOT_ASSIGNED`, `READ_ONLY_ROLE`, `ACCESS_EXPIRED`, `ROLE_INSUFFICIENT`. Never a bare 403 — that generates a support ticket every time.
+- [ ] **`MANAGE_ACCESS` is a THIRD requirement, and it is not a rung** — corrected 2026-08-24.
+  The ladder still decides only FULL or READ_ONLY. `MANAGE_ACCESS` asks the narrower question
+  after FULL is granted: *is this the OWNER, or the attorney THIS matter is assigned to?*
+  - It exists because **FULL is held by five populations, not two**: OWNER, the assigned
+    attorney, the assigned **paralegal**, anyone holding a live `matter_access` grant, and
+    anyone who becomes one of those.
+  - Gating the grant routes on FULL therefore let an assigned paralegal hand a matter to the
+    whole firm, and let a two-week coverage grant re-grant its own holder with no `expires_at`
+    — turning a time-boxed permission permanent. Both confirmed against a live stack.
+  - The lesson generalises: **an access LEVEL is not a stand-in for a NAMED population.** If a
+    rule in prose names specific people, the check must name them too.
+- [ ] `POST /v1/transactions/:id/access` — grant. **`MANAGE_ACCESS`**, i.e. OWNER or the assigned attorney — never plain FULL
+- [ ] `DELETE /v1/transactions/:id/access/:userId` — revoke. Same requirement as grant
+- [ ] `GET /v1/transactions/:id/access` — who can see this matter. READ_ONLY
+- [ ] **Nobody grants themselves.** `grant()` upserts on (transaction_id, user_id) and overwrites `expires_at`, so any holder who can call it can erase their own expiry. Refuse `userId === caller.id` → 422
+- [ ] **Assignment columns are NOT writable through the general `PATCH /:id`.** `assigned_attorney_id` and `assigned_paralegal_id` are the ladder's INPUT — a route that writes them is an access-control route wearing the clothes of a details form. Same reasoning that keeps `status` off that route
+- [ ] **Grant expiry is evaluated against one clock.** The detail route and the list predicate must both use the injected `Clock`, never SQL `now()` on one side — two clocks for one rule means the two surfaces can disagree at the boundary, and a Clock-pinned test cannot pin the list
+- [ ] **Permission errors explain themselves.** `MATTER_ACCESS_DENIED` returns `details: { reason, assignedAttorney, requestAccessFrom }`. Reason codes: `NOT_ASSIGNED`, `READ_ONLY_ROLE`, `ACCESS_EXPIRED`, `ROLE_INSUFFICIENT`, `NOT_MATTER_ATTORNEY`. Never a bare 403 — that generates a support ticket every time.
 - [ ] Full-text search results respect matter access — never surface a matter the user can't open
 
 ## Layer 8H — Passive Time Capture `[PHASE 1 — before launch]`

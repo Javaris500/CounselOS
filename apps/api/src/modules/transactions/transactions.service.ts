@@ -213,18 +213,19 @@ export class TransactionsService {
 
   // ── update ─────────────────────────────────────────────────────────────────
 
+  /**
+   * Partial update of a matter's DETAILS.
+   *
+   * No membership check here, because the two fields that needed one are gone:
+   * `updateTransactionSchema` no longer accepts `assignedAttorneyId` or
+   * `assignedParalegalId`. Assignment is the 8G ladder's input, not a detail
+   * field — see that DTO's banner.
+   */
   async update(
     user: AuthUser,
     id: string,
     input: UpdateTransactionInput,
   ): Promise<TransactionDetail> {
-    if (input.assignedAttorneyId !== undefined) {
-      await this.access.assertActiveFirmMember(user.firmId, input.assignedAttorneyId);
-    }
-    if (input.assignedParalegalId !== undefined) {
-      await this.access.assertActiveFirmMember(user.firmId, input.assignedParalegalId);
-    }
-
     const patch: Record<string, unknown> = { ...input };
     for (const field of ['effectiveDate', 'contractDate', 'closingDate', 'possessionDate']) {
       if (patch[field] !== undefined) patch[field] = this.toDate(patch[field] as string);
