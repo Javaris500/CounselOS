@@ -1,0 +1,40 @@
+.feed {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--s-2);
+  padding: var(--s-2) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.marker {
+  width: var(--s-1-5);
+  height: var(--s-1-5);
+  margin-top: var(--s-1-5);
+  border-radius: var(--radius-full);
+  background: var(--border-strong);
+}
+
+.body {
+  min-width: 0;
+}
+
+.description {
+  margin: 0;
+  font-size: var(--text-base);
+  line-height: 1.4;
+}
+
+.time {
+  color: var(--text-tertiary);
+  font-size: var(--text-2xs);
+}

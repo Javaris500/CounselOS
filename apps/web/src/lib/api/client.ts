@@ -80,7 +80,27 @@ async function doRefresh(): Promise<string> {
   return body.data.accessToken;
 }
 
-function refreshToken(): Promise<string> {
+/**
+ * The ONLY way to refresh. Exported so `restoreSession()` shares this promise
+ * rather than opening a second, competing refresh.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * WHY EXPORTED, ADDED 2026-08-23.
+ *
+ * `restoreSession()` in auth.ts called `apiFetch('/v1/auth/refresh')` directly,
+ * which is a normal request and therefore NOT single-flighted. React
+ * StrictMode (`reactStrictMode: true`) double-invokes effects in development,
+ * so `useRequireAuth` fired twice, two refreshes raced with the same cookie,
+ * and — because the refresh token ROTATES ON USE — the loser presented an
+ * already-consumed token and got a 401. `restoreSession()` returned false and
+ * bounced a signed-in user to /auth/login on every hard page load.
+ *
+ * The single-flight guard existed the whole time, six lines above the call that
+ * bypassed it. It only protected the 401-retry path inside `apiFetch`, and the
+ * one caller that most needed it went around the outside.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+export function refreshToken(): Promise<string> {
   refreshPromise ??= doRefresh().finally(() => {
     refreshPromise = null;
   });
@@ -171,6 +191,30 @@ export async function apiFetch<T>(path: string, options?: ApiFetchOptions): Prom
       body.error.requestId,
       res.status,
     );
+  }
+
+  /**
+   * PAGINATED ROUTES RETURN THE ENVELOPE. EVERYTHING ELSE RETURNS `data`.
+   *
+   * ───────────────────────────────────────────────────────────────────────────
+   * This returned `body.data` unconditionally until 2026-08-23, silently
+   * throwing `meta` away. A list hook typed `Paginated<T>` then received a bare
+   * array and `data.meta.total` threw — with typecheck, lint, and 79/79 API
+   * tests all green, because `as T` below is an unchecked cast and the API had
+   * been returning `meta` correctly the whole time. Slice 1's pipeline board
+   * rendered nothing. See `.team-5/findings/operator-slice-1-browser-findings.md`.
+   *
+   * The decision is made from the RESPONSE, not the call site, because the SWR
+   * fetcher is global (`providers.tsx`) — a hook cannot pass a different one
+   * without giving up the shared auth lifecycle.
+   *
+   * So: annotate a list hook `Paginated<T>` and a single-resource hook `T`. The
+   * annotation must match what the endpoint actually returns; `as T` cannot
+   * check that for you, and a browser gate is what catches it when it is wrong.
+   * ───────────────────────────────────────────────────────────────────────────
+   */
+  if (body.meta !== undefined) {
+    return { data: body.data, meta: body.meta } as T;
   }
 
   return body.data as T;

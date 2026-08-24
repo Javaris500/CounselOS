@@ -40,6 +40,21 @@ export const SEED_ANCHOR = new Date('2026-06-15T09:00:00.000-05:00');
 const days = (n: number): Date => new Date(SEED_ANCHOR.getTime() + n * 24 * 60 * 60 * 1000);
 
 /** Fixed UUIDs. Import these in tests; never retype one. */
+/**
+ * Fixture display names, so a browser test can assert the name a surface shows
+ * without hardcoding it.
+ *
+ * Same reasoning as SEED_IDS: an assertion that spells "James Okafor" inline
+ * passes for the wrong reason the day the fixture is renamed. The user rows
+ * below are built FROM this map, so the two cannot drift.
+ */
+export const SEED_NAMES = {
+  owner: 'Elena Rodriguez',
+  attorney: 'James Okafor',
+  paralegal: 'Sarah Kim',
+  inactive: 'Former Attorney',
+} as const;
+
 export const SEED_IDS = {
   firm: '00000000-0000-4000-8000-000000000001',
   users: {
@@ -109,7 +124,7 @@ async function seed(): Promise<void> {
         authId: SEED_IDS.authIds.owner,
         role: 'OWNER',
         email: 'elena@rodriguezlaw.test',
-        fullName: 'Elena Rodriguez',
+        fullName: SEED_NAMES.owner,
         barNumber: '24085512',
       },
       {
@@ -118,7 +133,7 @@ async function seed(): Promise<void> {
         authId: SEED_IDS.authIds.attorney,
         role: 'ATTORNEY',
         email: 'james@rodriguezlaw.test',
-        fullName: 'James Okafor',
+        fullName: SEED_NAMES.attorney,
         barNumber: '24102847',
       },
       {
@@ -127,7 +142,7 @@ async function seed(): Promise<void> {
         authId: SEED_IDS.authIds.paralegal,
         role: 'PARALEGAL',
         email: 'sarah@rodriguezlaw.test',
-        fullName: 'Sarah Kim',
+        fullName: SEED_NAMES.paralegal,
       },
       {
         id: SEED_IDS.users.inactive,
@@ -135,7 +150,7 @@ async function seed(): Promise<void> {
         authId: SEED_IDS.authIds.inactive,
         role: 'ATTORNEY',
         email: 'former@rodriguezlaw.test',
-        fullName: 'Former Attorney',
+        fullName: SEED_NAMES.inactive,
         isActive: false,
       },
     ]);
