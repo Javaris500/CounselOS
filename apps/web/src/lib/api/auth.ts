@@ -1,7 +1,7 @@
-import type { LoginInput, LoginResponse, RefreshResponse } from '@counselos/shared';
+import type { LoginInput, LoginResponse } from '@counselos/shared';
 
 import { useAuthStore } from '@/stores/auth.store';
-import { apiFetch } from './client';
+import { apiFetch, refreshToken } from './client';
 
 /**
  * The auth calls, kept out of mutations.ts on purpose.
@@ -42,8 +42,11 @@ export async function logout(): Promise<void> {
  */
 export async function restoreSession(): Promise<boolean> {
   try {
-    const { accessToken } = await apiFetch<RefreshResponse>('/v1/auth/refresh', { method: 'POST' });
-    useAuthStore.getState().setAccessToken(accessToken);
+    // Through the single-flight helper, NOT a bare apiFetch. Two concurrent
+    // refreshes send the same cookie, and the refresh token rotates on use, so
+    // the second one always loses — which under React StrictMode is every hard
+    // page load. See the note on refreshToken() in client.ts.
+    const accessToken = await refreshToken();
     // The token alone is not identity — fetch the user the API resolved from it.
     const user = await apiFetch<LoginResponse['user']>('/v1/auth/me');
     useAuthStore.getState().setSession(accessToken, user);

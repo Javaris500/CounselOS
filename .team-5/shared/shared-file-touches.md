@@ -15,6 +15,9 @@ pattern itself.** If you believe the pattern is wrong, that's a finding — not 
 |---|---|---|---|---|---|
 | 2026-08-19 | drafts | draft-review | `queryKeys.ts` | `draft(id, draftId)` | — |
 | 2026-08-19 | drafts | draft-review | `mutations.ts` | `approveDraft` | `draft`, `drafts`, `activity` |
+| 2026-08-23 | transactions | 1 | `apps/api/src/app.module.ts` | `TransactionsModule` in `imports` (2 lines, after `HealthModule`) | — |
+| 2026-08-23 | transactions | 1 | `apps/web/src/components/ui/index.ts` | `Card`, `Tabs`, `Select` exports (3 lines, appended) | — |
+| 2026-08-23 | transactions | 1 | `components/features/transactions/TransactionShell.tsx` — **the tab contract** | `TABS` (10 rows) + `LANDED` set. Five slices mount here. ADD a row and give it an `href`; never reorder, rename or reshape. Mount recipe is in the file header. | — |
 
 *(example rows — replace with real entries)*
 

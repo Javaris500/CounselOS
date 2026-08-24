@@ -1,4 +1,5 @@
 import type {
+  PaginationMeta,
   OutcomeReason,
   PartyRole,
   PartyType,
@@ -112,7 +113,13 @@ export interface AccessGrant {
 }
 
 /** `{ data, meta }` — the envelope's paginated form (04-data-contracts). */
+/**
+ * What `apiFetch` returns for a paginated route — the envelope, not the bare
+ * array. `meta` is required here and optional on `ApiSuccess` because a route
+ * either paginates or does not: if you annotate a hook with this type and the
+ * endpoint sends no `meta`, the hook is wrong, not the response.
+ */
 export interface Paginated<T> {
   data: T[];
-  meta: { page: number; limit: number; total: number; hasMore: boolean };
+  meta: PaginationMeta;
 }

@@ -10,6 +10,7 @@ import { ZodValidationPipe } from './common/pipes/zod-validation.pipe';
 import { AuthModule } from './modules/auth/auth.module';
 import { CoreModule } from './core.module';
 import { HealthModule } from './modules/health/health.module';
+import { TransactionsModule } from './modules/transactions/transactions.module';
 
 /**
  * The HTTP process root (main.ts).
@@ -39,6 +40,9 @@ import { HealthModule } from './modules/health/health.module';
     // protected unless it says @Public().
     AuthModule,
     HealthModule,
+    // Module 3 + 8G. After AuthModule, so the guard order is
+    // authenticate -> role -> matter access (18 3).
+    TransactionsModule,
   ],
   /**
    * ORDER IS EXECUTION ORDER (18 §3). Interceptors run top-down on the way in.

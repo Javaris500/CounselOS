@@ -1,0 +1,72 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.current {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.label {
+  color: var(--text-tertiary);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+
+.terminal {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+/* A refusal reads as information, not as an alarm — the attorney did nothing
+   wrong, the ladder simply does not go that way. Critical tint, not a shout. */
+.rejection {
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--urgency-critical-border);
+  border-left: 3px solid var(--urgency-critical-fg);
+  border-radius: var(--radius-sm);
+  background: var(--urgency-critical-bg);
+}
+
+.rejectionMessage {
+  margin: 0;
+  color: var(--urgency-critical-fg-on-tint);
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+
+.rejectionHint {
+  margin: var(--s-1) 0 0;
+  color: var(--urgency-critical-fg-on-tint);
+  font-size: var(--text-xs);
+}
+
+.outcomeIntro {
+  margin: 0 0 var(--s-3);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  max-width: 46ch;
+}
+
+.textarea {
+  width: 100%;
+  padding: var(--s-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  resize: vertical;
+}

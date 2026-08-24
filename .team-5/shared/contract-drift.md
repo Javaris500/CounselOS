@@ -12,6 +12,11 @@ a **documentation defect** — the doc was wrong, not the agent.
 | date | slice | endpoint / field | mock said | reality was | doc to fix | fixed |
 |---|---|---|---|---|---|---|
 | 2026-08-19 | draft-review | `draft.sections[].reviewedAt` | absent | present, ISO string | `04-data-contracts.md` | no |
+| 2026-08-23 | transactions | `MATTER_ACCESS_DENIED` `error.details` | `13-adoption-features.md` §1 shows flat strings: `{ reason: "NOT_ASSIGNED", assignedAttorney: "James Okafor" }` | `ApiError.details` is typed `Record<string, string[]>` in `packages/shared/src/types/api.ts`, so values must be arrays | `13-adoption-features.md` §1 — or widen the type in `packages/shared` | no |
+| 2026-08-23 | transactions | activity event-type constant name | `05-backend-checklist.md` §3D calls it "the `EventType` constant object" | exported as `EVENT_TYPES` (object) + `EventType` (type), matching `ERROR_CODES`/`ErrorCode` and `SSE_EVENTS`/`SseEventType` | `05-backend-checklist.md` §3D | no |
+| 2026-08-23 | transactions | transaction feature components path | `02-repo-structure.md` shows `components/transactions/` | dispatch `may_edit` grants `components/features/transactions/`; built there | `02-repo-structure.md` | no |
+| 2026-08-23 | transactions | `parties` as its own module | `02-repo-structure.md` lists `modules/parties/` beside `modules/transactions/` | built inside `modules/transactions/`; the dispatch scopes parties to Module 3, parties cascade with their transaction and have no standalone route | `02-repo-structure.md` | no |
+| 2026-08-23 | transactions | Design System v5 token coverage | agent files say every space/colour/radius/duration is a `var(--token)` and "no literal px, ever" | there are no tokens for border widths, outline offsets, media-query breakpoints or layout constraints (`minmax`, `min()`), and a media query cannot read a custom property at all. Slice 0a's own primitives (`Button`, `Spinner`, `Drawer`, `Badge`, `Toast`) use bare px for exactly these, so that is the house convention — followed it, and used tokens everywhere one exists | `07-design-handoff.md` — either publish the missing scales or state the structural-px carve-out | no |
 
 *(example row — replace with real entries)*
 
