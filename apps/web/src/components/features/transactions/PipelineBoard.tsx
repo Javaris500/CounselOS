@@ -62,6 +62,8 @@ export function PipelineBoard(): React.JSX.Element {
         <Header count={null} action={newMatterButton} />
         <ErrorState
           code={error instanceof ApiError ? error.code : undefined}
+          message={error instanceof ApiError ? error.message : undefined}
+          details={error instanceof ApiError ? error.details : undefined}
           requestId={error instanceof ApiError ? error.requestId : undefined}
         />
         {dialog}
