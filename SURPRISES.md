@@ -126,3 +126,157 @@ because you did not think about them.
 
 **Cost:** none yet — caught before the doc was circulated. Would have cost a second round of
 assumed-blocked state on schema work that has been done since 2026-08-18.
+
+---
+
+## 005 — 2026-08-24 — A placeholder empty state is indistinguishable from a true one
+
+Login lands on `/dashboard`. It rendered "No active transactions — add your first one and
+CounselOS starts working immediately" against a database holding ten seeded matters. The
+operator reasonably read this as slice 1 being broken, and the next twenty minutes went into
+the API, the CORS config, the request log, and a scripted browser session.
+
+The page is four lines and fetches nothing:
+
+```tsx
+export default function DashboardPage() {
+  return <EmptyState title="No active transactions" description="Add your first one…" />;
+}
+```
+
+A slice 0a placeholder, correctly labelled as one *in its own docstring*, rendering the exact
+component a real aggregation would render on a genuinely empty firm.
+
+**Why this is the surprise.** This codebase already holds the principle that would have
+prevented it, and applies it rigorously one layer down. `not_configured` is a first-class
+state for every external service; CLAUDE.md says never render a spinner for a service known to
+be down, render a disabled state with a plain explanation. The rule exists because a fake
+working state is worse than a visible broken one. Nobody extended it from *services* to
+*surfaces* — so an unbuilt page is allowed to impersonate a built one, and does it in the
+product's own confident voice.
+
+The docstring is not a mitigation. It is visible to whoever opens the file and invisible to
+everyone looking at the running app, which is exactly the population that gets misled.
+
+**The lesson that generalizes:** a stub must announce itself in the medium where it will be
+encountered. A placeholder that renders a plausible real state is a lie the whole team will
+believe, including its author, three weeks later.
+
+**Cost:** roughly twenty minutes of operator time and one wrong hypothesis chased into two
+subsystems. Would have been zero with the word "Placeholder" on screen.
+
+---
+
+## 006 — 2026-08-24 — A liveness probe confirmed a restart that had not happened
+
+The API was rebuilt and restarted so the operator could see two fixes in the browser. The new
+process died immediately — `EADDRINUSE` on 3001, because the `kill` of the previous one had
+not taken. `curl /v1/health` then returned `{"status":"ok"}`, and the stack was reported to the
+operator as restarted and carrying the fixes.
+
+It was answering from the *old* process, which had been started hours earlier from a different
+environment. The health check was truthful and the conclusion drawn from it was false.
+
+**Why this is the surprise.** The failure was fully recorded — the crash was in the log file
+the restart had been redirected into, unread, because the health probe had already produced an
+answer shaped like success. Same structure as 002: the verification step returned agreement,
+so nobody looked at the louder evidence sitting one command away.
+
+**The lesson that generalizes:** a liveness probe proves *something* is listening on a port. It
+never proves *your* process is. When restarting a service, verify the thing you actually
+changed — the pid, the startup log, a value that only the new build could return — not that
+the port responds. "Is it up?" and "is it mine?" are different questions and only one of them
+was asked.
+
+**Cost:** the operator was told to look at fixes the running binary did not contain. Compounded
+006 → 007, because the stale process also carried the CORS config that caused the next failure.
+
+---
+
+## 007 — 2026-08-24 — A CORS block was reported to the user as a wrong password
+
+`localhost:3000` and `127.0.0.1:3000` are different origins to a browser. The running API had
+been started with `CORS_ORIGINS=http://127.0.0.1:3000` only, so a login from `localhost:3000`
+was refused at the preflight and never reached the auth code.
+
+The login form reported: **"That email and password combination was not recognised."**
+
+The credentials were correct. They were never checked. Identical requests differing only in
+the `Origin` header: `127.0.0.1` gets an `Access-Control-Allow-Origin` back, `localhost` gets
+nothing.
+
+**Why this is the surprise.** The frontend maps every failed login to the credential message,
+because from inside the `catch` the two cases look the same. But they are not the same for the
+person reading the screen: one means *try again*, the other means *nothing you type will ever
+work*. The message chosen is the one that guarantees the user does the useless thing, and does
+it repeatedly. This is the same defect the slice 1 review already found in the status control —
+a message that is *actionable and futile* — arriving independently on a second surface, which
+suggests the pattern rather than the instance is what needs fixing.
+
+**The lesson that generalizes:** an error path must distinguish "the server said no" from "the
+request never arrived". Collapsing transport failure into a domain error produces confident,
+specific, wrong guidance — and sends whoever is debugging into the wrong subsystem, which is
+where the real cost lands.
+
+**Cost:** one failed login round, plus operator time in the API and the seed data before the
+`Origin` header was compared.
+
+---
+
+## 008 — 2026-08-24 — A security fix shipped with tests that could not fail if it were deleted
+
+The 8G matter-access floor refuses a non-staff account before any assignment check — without
+it, a `CLIENT` id written into `assigned_attorney_id`, or a `matter_access` grant row, yields
+FULL access to a portal client. Unit suite: **55/55 green**.
+
+Comment out the floor entirely: still 55/55 green.
+
+Every `CLIENT` case in the spec was a *stranger* case — no assignment, no grant — which the
+fall-through already refused before the floor existed. The tests sat directly beside the code
+they did not test, under a file header explaining that this suite walks the ladder rung by
+rung precisely to catch combinations no endpoint currently produces.
+
+The same shape appeared again the same day, one layer up: the browser test for the explaining
+denial asserted the word `"attorney"`, which passed only because the *generic* copy said "ask
+the assigned attorney". When the component was fixed to render the server's message naming
+James Okafor, the test went red — it had been pinned to the defect.
+
+**Why this is the surprise.** Both suites were written by someone reasoning carefully about the
+rule, with comments articulating exactly what the test was for. Coverage was not the problem
+and neither was care. The assertions were simply satisfiable by the broken code, and nothing in
+a green run can tell you that.
+
+**The lesson that generalizes:** for any check whose failure mode is silent — an authorization
+floor, a denial message, a redaction — a passing test is not evidence. Break the code
+deliberately and confirm the test goes red. It takes a minute and it is the only thing that
+distinguishes a test from a comment that runs. Four rung-0 tests were added and mutation-tested
+this way; all four fail with the floor removed.
+
+**Cost:** none in production — caught during verification. But it shipped through a full green
+gate, which is the part worth sitting with.
+
+---
+
+## 009 — 2026-08-24 — An agent session killed by a 529 was indistinguishable from one that had finished
+
+The transactions agent's session stopped mid-task at 05:01 on an `API Error: 529 Overloaded`,
+two turns after the operator typed `continue`. From outside it presented as `idle` — the same
+state a session shows when it has completed its work and is waiting. The worktree was left with
+uncommitted, unverified changes to two files in the matter-access layer.
+
+Forty minutes later the operator sent it a status-check message. It was never processed; the
+session had no turn left to run. The reply the operator was waiting for was never coming, and
+nothing in the session list said so.
+
+**Why this is the surprise.** Supervision assumed "idle" meant "between tasks". It also covers
+"dead", "crashed mid-edit", and "holding work nobody has verified". The distinguishing evidence
+existed — the last line of the transcript is the error — but it lives in a file nobody reads
+while a session still looks alive in the roster.
+
+**The lesson that generalizes:** an orchestration layer must separate *finished* from *stopped*.
+Any supervisor that treats them alike will eventually wait indefinitely on a corpse, and — worse
+— will leave half-finished work in a shared tree while believing an agent is still tending it.
+Before messaging an idle agent, check whether its last turn ended in output or in an error.
+
+**Cost:** ~40 minutes of assumed-in-progress state, and an uncommitted security change that sat
+unverified in a worktree the operator believed was being actively worked.
