@@ -20,6 +20,17 @@ If yes, log it.
 | 8 | 2026-08-23 | operator | 1 | Keep the vertical cut: one agent owns one feature through every layer | AVEL's own rule — a boundary is worth its handoff cost only if it can be written as writable paths — selects it for this stack. NestJS colocates a feature's controller, service, repository, and DTO in one directory, so the feature boundary is a directory a mount can enforce and the layer boundary is a file-suffix pattern no mount can. AVEL's `SANDBOX.md` (in the AVEL repo, not carried here) framed this as an enforcement problem needing diff checking; it is a decomposition problem, and under the vertical cut it does not arise. | Converting to AVEL's horizontal roster (Leonora/Kel/Dunn/Gat/Ghost/Leon) |
 | 9 | 2026-08-23 | operator | 1 | Foundations named as a role in all seven identity files; the operator holds it for slice 1 | The vertical cut opens a gap the horizontal one does not: each agent owns a slice of the schema and nobody owns consistency between them, which yields one timestamp convention and one error envelope per slice, discovered at integration. The surfaces were already off-limits to agents in every file — what was missing was an accountable owner, not a restriction. Assigned to the operator rather than a new agent because condition 1 exists to isolate one unknown (can an agent write a NestJS module), and a second never-run agent gives a bad result two candidate causes. The gap is latent in slice 1 regardless: stagger means one feature agent writes, and divergence needs two. It bites at queue order 3, the first parallel dispatch. | A new foundations agent; case-ops expanded — ruled out by the roster's own logic, since Nemi's rationale is that owning territory disqualifies you from judging a seam |
 
+## Superseding a decision
+
+**Never edit an existing row.** This file is `may_append_only` and `check-mounts.sh` fails on a
+removed line — and more importantly, a decision log that can be edited is a changelog, not a
+reasoning trail. Append a new row that says which one it supersedes and why the reasoning changed.
+
+Mission 002 produced the first real instance: decision-log row 9 set the trigger for making
+Foundations a real agent at "two or more feature agents running concurrently". Slice 1 disproved it
+with one agent — the gap was provisioning, not divergence. Row 9 stays exactly as written, because
+what it got wrong and why is the useful part.
+
 ## Belongs here
 
 - A pattern another agent will inherit
