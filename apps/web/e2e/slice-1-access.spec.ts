@@ -1,5 +1,5 @@
 import { expect, test } from './fixtures/auth';
-import { SEED_IDS } from './fixtures/seed';
+import { SEED_IDS, SEED_NAMES } from './fixtures/seed';
 
 /**
  * ═════════════════════════════════════════════════════════════════════════════
@@ -59,8 +59,17 @@ test.describe('Layer 8G in the browser — the paralegal', () => {
     //     rather than that she may not. Asserting the rendered sentence is
     //     deliberate — "explaining" is a claim about what a human reads, and no
     //     testid can stand in for it.
+    //
+    //     This asserted the bare word "attorney" until 2026-08-24, and passed
+    //     against the GENERIC copy ErrorState mapped from the code — "ask the
+    //     assigned attorney to add you". That is precisely the defect finding 1
+    //     describes: the server named James Okafor and the component said "the
+    //     assigned attorney". So the assertion is now the NAME, which can only
+    //     have come from `error.message`, and the generic phrase is asserted
+    //     ABSENT so a regression to it fails here instead of passing quietly.
     await expect(error).toContainText('access');
-    await expect(error).toContainText('attorney');
+    await expect(error).toContainText(SEED_NAMES.attorney);
+    await expect(error).not.toContainText('the assigned attorney');
   });
 
   test('an unassigned matter is not in her pipeline either', async ({ page }) => {

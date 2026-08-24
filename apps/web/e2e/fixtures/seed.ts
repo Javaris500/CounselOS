@@ -44,6 +44,7 @@ interface SeedExport {
     deadlines: Record<'financingContingency' | 'titleCommitment' | 'closingDate', string>;
     lead: string;
   };
+  names: Record<'owner' | 'attorney' | 'paralegal' | 'inactive', string>;
   anchor: string;
 }
 
@@ -72,6 +73,15 @@ const exported = readSeedExports();
 
 /** Fixed UUIDs, straight out of `apps/api/src/database/seed.ts`. */
 export const SEED_IDS = exported.ids;
+
+/**
+ * Fixture display names, from the same module that inserts them.
+ *
+ * A surface that names a person is asserted against this rather than an inline
+ * string — the seed builds its user rows from this map, so a rename moves both
+ * at once instead of turning a real regression into a passing test.
+ */
+export const SEED_NAMES = exported.names;
 
 /**
  * The instant every seeded relative date is measured from.
