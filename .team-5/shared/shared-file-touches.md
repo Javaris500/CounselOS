@@ -15,6 +15,7 @@ pattern itself.** If you believe the pattern is wrong, that's a finding — not 
 |---|---|---|---|---|---|
 | 2026-08-19 | drafts | draft-review | `queryKeys.ts` | `draft(id, draftId)` | — |
 | 2026-08-19 | drafts | draft-review | `mutations.ts` | `approveDraft` | `draft`, `drafts`, `activity` |
+| 2026-08-23 | transactions | 1 | `apps/api/src/app.module.ts` | `TransactionsModule` in `imports` (2 lines, after `HealthModule`) | — |
 
 *(example rows — replace with real entries)*
 
