@@ -1,0 +1,27 @@
+.select {
+  width: 100%;
+  height: var(--row-compact);
+  padding: 0 var(--s-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+}
+
+.select:focus-visible {
+  outline: 2px solid var(--sl-400);
+  outline-offset: 1px;
+}
+
+.select:disabled {
+  background: var(--surface-inset);
+  color: var(--text-disabled);
+  cursor: not-allowed;
+}
+
+/* Invalid is border + the Field error text below it, never colour alone. */
+.invalid {
+  border-color: var(--urgency-critical-fg);
+}

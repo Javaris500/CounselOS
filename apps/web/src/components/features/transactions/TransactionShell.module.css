@@ -1,0 +1,72 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-6);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-4);
+}
+
+.identity {
+  min-width: 0;
+}
+
+.number {
+  color: var(--text-tertiary);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.02em;
+}
+
+.title {
+  margin: var(--s-0-5) 0 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.address {
+  margin: var(--s-1) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.facts {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+
+.factList {
+  display: flex;
+  gap: var(--s-4);
+  margin: 0;
+}
+
+.factList div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-0-5);
+}
+
+.factList dt {
+  color: var(--text-tertiary);
+  font-size: var(--text-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.factList dd {
+  margin: 0;
+  font-size: var(--text-xs);
+}
+
+.content {
+  min-width: 0;
+}

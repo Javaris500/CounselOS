@@ -1,0 +1,56 @@
+.card {
+  display: block;
+  width: 100%;
+  padding: var(--pad-compact);
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  text-align: left;
+}
+
+/* Elevation 2: line-strong + sm shadow. The hover lift is a state change. */
+.raised {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+  transition:
+    box-shadow var(--duration-standard) var(--ease-out),
+    border-color var(--duration-standard) var(--ease-out);
+}
+
+button.card {
+  cursor: pointer;
+}
+
+button.card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+button.card:focus-visible {
+  outline: 2px solid var(--sl-400);
+  outline-offset: 2px;
+}
+
+/* The left rule. Never carries meaning alone — it pairs with a Badge whose
+   label is the readable signal (07: never hue alone). */
+.accent-none {
+  border-left: 1px solid var(--border);
+}
+.accent-info {
+  border-left: 3px solid var(--urgency-info-fg);
+}
+.accent-warning {
+  border-left: 3px solid var(--urgency-warning-fg);
+}
+.accent-urgent {
+  border-left: 3px solid var(--urgency-urgent-fg);
+}
+.accent-critical {
+  border-left: 3px solid var(--urgency-critical-fg);
+}
+.accent-done {
+  border-left: 3px solid var(--sage-500);
+}

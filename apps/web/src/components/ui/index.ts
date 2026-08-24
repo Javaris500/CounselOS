@@ -18,3 +18,6 @@ export { Drawer, type DrawerProps } from './Drawer';
 export { Table, type Column, type TableProps } from './Table';
 export { ToastProvider, useToast, type ToastMessage } from './Toast';
 export { useZodForm, applyServerErrors, Field, type FieldProps } from './Form';
+export { Card, type CardProps } from './Card';
+export { Tabs, type TabItem, type TabsProps } from './Tabs';
+export { Select, type SelectOption, type SelectProps } from './Select';
