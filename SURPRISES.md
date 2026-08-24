@@ -91,3 +91,38 @@ the 001 rewrite so this stays one bug, not two. Logged for whoever owns Module 2
 **Also noted:** `@supabase/supabase-js` is now imported by nothing in `src/`. It stays in
 `apps/api/package.json` because Storage will need it (CLAUDE.md:101 scopes the service key to
 Auth and Storage), but until that module lands it is an unused dependency.
+
+---
+
+## 004 — 2026-08-23 — The correction to 002 did not take, and read as more trustworthy for it
+
+"CounselOS: Where We Are" was revised after entry 002. The roster section was rewritten
+correctly — it adopts the vertical cut, stops restating the roster, and points at `agents/`. The
+state sections were not touched. The result asserts both answers in one document:
+
+> **Database tables.** `apps/api/src/db/schema.ts` is empty… The 27-table schema is designed on
+> paper. It has not been written into code or migrated into a database.
+
+> **Slice 0 has shipped.** Slice 1 is the first run through the `agents/` roster.
+
+Verified the same day: 18 commits, 28 `pgTable` calls, 4 migrations, and no `apps/api/src/db/`
+directory at all. The four check commands still address the wrong path, so they still return the
+silently-confirmatory zero that 002 was about.
+
+Three more claims the vertical cut had already invalidated, left standing: "Leonora goes first and
+nobody else can start" (no `leonora` in `agents/`), "Iyo and Nemi can only write test files" (no
+`iyo` either), and "Compare `.team-5/` against the agent list above" — pointing at a list the same
+revision had deliberately removed.
+
+**Why this is the surprise and not a repeat of 002.** The document was revised where the *thinking*
+had changed and not where the *facts* were. That is the failure mode: you patch the sections you
+were actively reasoning about, and the untouched sections go on asserting the previous world with
+undiminished confidence. Worse, the corrected roster section raises the credibility of everything
+around it — a reader who checks the part that was fixed concludes the document is current.
+
+**The lesson that generalizes:** a partial correction is more dangerous than no correction. When a
+document's premises change, the sections you did not think about are the ones to re-read, precisely
+because you did not think about them.
+
+**Cost:** none yet — caught before the doc was circulated. Would have cost a second round of
+assumed-blocked state on schema work that has been done since 2026-08-18.

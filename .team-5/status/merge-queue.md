@@ -48,13 +48,20 @@ DONE     L1 1D   error envelope: exception filter, error classes, Zod pipe,
                  correlation + response + logging interceptors. E2E gate green.
 DONE     8L      GET /v1/health/services, not_configured first-class
 DONE             seed.ts + the Austin fixtures; db:seed and db:reset work again
-BLOCKED  L2      Auth — JWT guard, Redis hydration, roles      [needs Supabase]
-BLOCKED  8G      matter-level access guard                     [needs Auth]
+DONE     L2      Auth — JWT guard, Redis hydration, roles
+                 ES256/JWKS verification, login proxy, httpOnly rotating
+                 refresh cookie. Supabase provisioned in us-east-1.
+BLOCKED  8G      matter-level access guard                     [needs Module 3]
 ```
 
-**What 0b is blocked on:** the Supabase project. `apps/api/.env` still holds placeholder
-`SUPABASE_*` values, so Module 2 cannot be built and the Slice 0 gate — which is four clauses of
-auth behaviour — cannot run.
+**0b is no longer blocked.** Supabase is provisioned, Module 2 shipped, and the Slice 0 gate runs
+green: 6/6 Playwright, 37/37 API E2E, 41/41 integration, 19/19 unit. The gate's fourth clause —
+a paralegal denied an unassigned matter — moved to slice 1 with 8G, which resolves against
+`transactions.assigned_attorney_id` and so cannot exist before Module 3 (`00-developer-guide.md`
+§7, noted 2026-08-18).
+
+The gate earned its keep on the way through: it caught a cross-user session bug in the Supabase
+client that no unit test asserts against and no bug report would have described. `SURPRISES.md` 001.
 
 ## Dispatch order — decided 2026-08-18
 
@@ -80,17 +87,47 @@ gated together. Four conditions came with that decision:
 
 | order | agent | slice | module | blocked by |
 |---|---|---|---|---|
-| 1 | transactions | 1 | Module 3 + 8G | Playwright system libs |
+| 1 | transactions | 1 | Module 3 + 8G | — cleared 2026-08-23 |
 | 2 | documents | 2 | Module 4 | Module 3 |
 | 3 | drafts · case-ops | 6 · 4/7 | Module 7 · 8A–8D | Module 3 |
 | 4 | chat · deadlines | 5 · 3 | Module 5 · Module 6 + M1 | Module 4 |
+
+## Dispatch hold — roster decomposition · OPENED 2026-08-23 · **CLOSED 2026-08-23**
+
+**Resolved: the vertical cut stands.** AVEL's rewritten roster doc adopts the shape-plus-instantiation
+model — the principle is fixed, the cut is derived from the client's directory structure, and a
+feature-organised framework gets the vertical cut. `agents/` is correct as it stands. Territory names
+are the convention for feature agents; a personal name marks a horizontal role that builds nothing.
+Foundations is assigned to the operator (decision-log row 9). **Dispatch is unblocked.**
+
+The original statement of the problem is kept below, because the reasoning is the record.
+
+`agents/` and `ROSTER-V2.md` — an AVEL doc, in the AVEL repo, deliberately not carried here —
+describe two different decompositions, not two vocabularies
+for one. AVEL cuts by **layer** — Leonora owns schema, Kel owns services, Dunn owns routes, Gat
+owns auth, Ghost owns state, Leon owns components. This repo cuts by **feature**: one agent owns
+one slice through every layer, which is Option C above. A single agent here spans all six AVEL
+lanes, which is why five of our seven folders have no AVEL name to inherit and are named for their
+slice instead. Nemi is the only one with a roster name because she is horizontal in both systems —
+she owns no territory in either, which is the whole point of her.
+
+**Why this blocks rather than proceeds in parallel.** If AVEL resolves toward the horizontal
+roster, the `transactions` agent dissolves into six and Option C reverses along with its four
+conditions. The dispatch↔completion pair is the unit of measurement this apparatus exists to
+collect; producing one against a roster that is about to change measures a system that will not
+exist. Condition 1's stated purpose — finding out what an agent gets wrong when it writes backend
+code for the first time — is only answerable once we know which agent that is.
+
+Handed to AVEL 2026-08-23 with the tree, the comparison, and the two resolutions stated. Slice 1
+is specced and parked, not cancelled.
 
 ## Queue
 
 | order | slice | agent | branch | status | playwright gate | merged |
 |---|---|---|---|---|---|---|
-| 0a | foundation: frontend | operator | — | built, awaiting review | — | — |
-| 0b | foundation: backend + auth | operator | — | (gates the Slice 0 gate) | — | — |
+| 0a | foundation: frontend | operator | — | merged | — | 2026-08-23 |
+| 0b | foundation: backend + auth | operator | — | merged | pass (6/6) | 2026-08-23 |
+| 1 | transactions | transactions | feat/transactions-slice-1 | queued | — | — |
 
 **Status:** `queued` → `integrating` → `gate-running` → `merged` | `blocked`
 
