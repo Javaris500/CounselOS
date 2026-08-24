@@ -1,9 +1,11 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { OUTCOME_REASONS, TERMINAL_TRANSACTION_STATUSES, TRANSACTION_STATUSES } from '@counselos/shared';
-
-/** Outcome notes cap. Not in FIELD_LIMITS yet — see the note in the schema. */
-export const OUTCOME_NOTES_MAX = 500;
+import {
+  FIELD_LIMITS,
+  OUTCOME_REASONS,
+  TERMINAL_TRANSACTION_STATUSES,
+  TRANSACTION_STATUSES,
+} from '@counselos/shared';
 
 /**
  * A status change, and the outcome capture that rides with a terminal one.
@@ -32,11 +34,12 @@ export const updateStatusSchema = z
     status: z.enum(TRANSACTION_STATUSES),
     outcomeReason: z.enum(OUTCOME_REASONS).optional(),
     /**
-     * 500 chars, matching COMMUNICATION_SUMMARY's reasoning rather than its
-     * constant: FIELD_LIMITS has no OUTCOME_NOTES entry and packages/shared is
-     * Foundations' file. Filed in .team-5/log/error-log.md to be hoisted.
+     * The shared limit, so the character counter in the browser and the
+     * validator here cannot disagree. Was a local constant while
+     * `packages/shared` was outside this slice's boundary (error-log row 4);
+     * Foundations hoisted it, so the local copy is gone rather than synced.
      */
-    outcomeNotes: z.string().trim().max(OUTCOME_NOTES_MAX).optional(),
+    outcomeNotes: z.string().trim().max(FIELD_LIMITS.OUTCOME_NOTES).optional(),
   })
   .superRefine((value, ctx) => {
     const terminal = (TERMINAL_TRANSACTION_STATUSES as readonly string[]).includes(value.status);

@@ -1,9 +1,14 @@
 'use client';
 
 import useSWR from 'swr';
-import { keys } from '@/lib/api/queryKeys';
+import type {
+  ActivityEntry,
+  Paginated,
+  Transaction,
+  TransactionDetail,
+} from '@counselos/shared';
 
-import type { ActivityEntry, Paginated, Transaction, TransactionDetail } from './transaction.types';
+import { keys } from '@/lib/api/queryKeys';
 
 /**
  * SWR reads for this slice.

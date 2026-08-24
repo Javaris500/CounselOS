@@ -1,9 +1,10 @@
 'use client';
 
+import type { Party } from '@counselos/shared';
+
 import { EmptyState } from '@/components/ui';
 
 import { PARTY_ROLE_LABELS } from './status-ladder';
-import type { Party } from './transaction.types';
 import styles from './PartiesList.module.css';
 
 /**

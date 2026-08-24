@@ -2,18 +2,19 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { REFERRAL_SOURCE_TYPES, TRANSACTION_TYPES } from '@counselos/shared';
+import {
+  REFERRAL_SOURCE_TYPES,
+  TRANSACTION_TYPES,
+  createTransactionFormSchema,
+  toCreateBody,
+  type CreateTransactionForm,
+  type TransactionDetail,
+} from '@counselos/shared';
 
 import { Button, Dialog, Field, Select, applyServerErrors, useToast, useZodForm } from '@/components/ui';
 import { createTransaction } from '@/lib/api/mutations';
 
-import {
-  createTransactionFormSchema,
-  toCreateBody,
-  type CreateTransactionForm,
-} from './create-transaction.schema';
 import { TRANSACTION_TYPE_LABELS } from './status-ladder';
-import type { TransactionDetail } from './transaction.types';
 import styles from './CreateTransactionDialog.module.css';
 
 const REFERRAL_LABELS: Record<string, string> = {

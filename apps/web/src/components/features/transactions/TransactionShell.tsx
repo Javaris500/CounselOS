@@ -1,12 +1,12 @@
 'use client';
 
 import { createContext, useContext, type ReactNode } from 'react';
+import type { TransactionDetail } from '@counselos/shared';
 
 import { Badge, ErrorState, Skeleton, Tabs, type TabItem } from '@/components/ui';
 import { ApiError } from '@/lib/api/client';
 
 import { STATUS_LABELS, STATUS_TONES, formatDate, formatMoney } from './status-ladder';
-import type { TransactionDetail } from './transaction.types';
 import { useTransaction } from './useTransactions';
 import styles from './TransactionShell.module.css';
 
