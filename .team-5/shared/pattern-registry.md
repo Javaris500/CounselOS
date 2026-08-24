@@ -66,3 +66,36 @@ A primitive you build and register starts at `exists` — you built it, so it do
 - Drift from a canonical primitive (a Dialog wrapper that reimplements half of Dialog)
 - **A `planned` primitive used or reimplemented anyway** — that means an agent worked around the
   foundation gate instead of stopping, which is the failure this column was added to catch
+
+---
+
+## Audit — slice 1, nemi, 2026-08-24
+
+**Append-only, per this file's own rule.** No row above was edited. Full reasoning and the fixes
+are in `.team-5/findings/nemi-slice-1-findings.md` (finding 3 and the audit section).
+
+| check | result |
+|---|---|
+| Registered in the same commit as built | **PASS**, all three — `Card`, `Tabs`, `Select` all in `77bc39b`, alongside `ui/Card.tsx`, `ui/Tabs.tsx`, `ui/Select.tsx` and the `ui/index.ts` exports. Verified against the commit's file list, not the claim. |
+| Genuinely new, not a near-duplicate | **PASS**, all three. No prior row covers a bordered surface, a tab strip or a dropdown. |
+| Entry matches what shipped | **2 of 3.** `Tabs` and `Select` are accurate. `Card` is not — see below. |
+| Nothing else in the slice duplicates a primitive | **PASS.** Every recurring element the slice shipped is consumed from `@/components/ui`. No second modal, skeleton, form pattern or listbox. |
+| No `planned` primitive used or reimplemented | **PASS.** All fifteen rows read `exists`. |
+
+**The one violation — `Card` has zero consumers and two live duplicates.**
+
+`Card` is imported by `components/ui/index.ts` and by nothing else. The same commit that registered
+it shipped two hand-rolled bordered surfaces on the same four tokens:
+`features/transactions/TransactionCard.module.css` `.card` and
+`features/transactions/TransactionOverview.module.css` `.panel`. `.panel` is `Card` with identical
+padding.
+
+There is a real constraint underneath: `TransactionCard` must be an `<a>` for keyboard activation
+and open-in-new-tab, and `Card` offers only `<div>` or `<button onClick>` — it has no `href` form.
+That is a gap in the primitive, not a licence to fork it.
+
+**Decision required from Foundations, not from a slice agent** — either give `Card` an `href`
+variant and rebuild both on it, or argue the row should change, which is what this file's
+"Registering a new primitive" section instructs. A canonical primitive with no proven usage and two
+competing precedents beside it is the exact divergence this registry exists to prevent, arriving
+through the registry itself.
