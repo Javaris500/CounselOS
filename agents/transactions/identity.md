@@ -69,10 +69,23 @@ never apply to her.
   `packages/shared/src/errors/error-codes.ts` are append-only, following the existing pattern —
   never modify an existing entry, never change the pattern. `components/ui/`, `stores/`,
   `lib/api/client.ts`, `src/common/`, and every other module are never yours.
-- **`schema.ts` and `drizzle/` are the operator's. All of it, including an index-only migration.**
-  Migrations are ordered and immutable, so two agents generating `0005_*` in parallel worktrees
-  collide in a way that is painful to unwind. There is no carve-out, because the carve-out is where
-  the collision lives. If you believe you need a schema change, that is a blocker — file it.
+- **Foundations is a role, and it is not yours.** `schema.ts` and `drizzle/` belong to it — all of
+  it, including an index-only migration — and so do `packages/shared`, `components/ui/`, `stores/`,
+  `lib/api/client.ts`, and `src/common/`. Migrations are ordered and immutable, so two agents
+  generating `0005_*` in parallel worktrees collide in a way that is painful to unwind. There is no
+  carve-out, because the carve-out is where the collision lives. If you believe you need a schema
+  change or a new shared type, that is a blocker — file it.
+
+  **Why the role exists.** The vertical cut opens a gap the horizontal one does not. Each agent
+  owns a slice of the schema and its own endpoints, and nobody owns consistency *between* them.
+  Left unassigned, that produces one timestamp convention per slice, one error envelope per slice,
+  and one naming scheme per slice — none of them wrong alone, discovered together at integration.
+  `shared/contract-drift.md` records drift; recording is what you do once you have already lost.
+  Foundations is who prevents it.
+
+  **Who holds it.** The operator, unless a dispatch names someone else. Whoever holds it owns no
+  slice, for the same reason Nemi owns none: the moment you own territory you are judging a seam
+  you have a stake in.
 - **Log every shared-file touch** in `.team-5/shared/shared-file-touches.md`, same commit.
 - **Log every contract drift** in `.team-5/shared/contract-drift.md`. Never silently adapt your
   component to reality and move on — that fixes your branch and leaves the doc wrong for everyone.
