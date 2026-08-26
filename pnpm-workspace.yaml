@@ -10,6 +10,10 @@ packages:
 # things that must not drift get defined once.
 catalog:
   # --- runtime: backend ---
+  # Generic WCAG rule sweep in the browser gate. Complements the hand-written
+  # assertions in slice-1-a11y.spec.ts rather than replacing them: those aim at
+  # this slice's known risks, axe catches the rules nobody thought to check.
+  '@axe-core/playwright': ^4.13.0
   '@eslint/js': ^10.0.1
   '@faker-js/faker': ^10.1.0
   # Bridges the canonical Zod schemas in packages/shared into react-hook-form,

@@ -1,29 +1,174 @@
+/*
+ * Every value is a token from globals.css. No literals — see the Tokens rule.
+ *
+ * Two layouts, three kinds. The layout decides the composition; the kind
+ * decides only the mark and, for `not-built`, the border treatment.
+ */
+
 .wrap {
   display: flex;
+  border-radius: var(--radius-lg);
+}
+
+/* ── page: owns the surface ──────────────────────────────────────────────── */
+
+.page {
   flex-direction: column;
-  align-items: flex-start;
-  gap: var(--s-2);
-  padding: var(--s-8) var(--s-6);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-md);
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-4);
+  min-height: 320px;
+  padding: var(--s-10) var(--s-8);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   background: var(--surface-card);
+  text-align: center;
+}
+
+.page .mark {
+  width: 40px;
+  height: 40px;
+  color: var(--text-disabled);
+}
+
+.page .copy {
+  gap: var(--s-1-5);
+  max-width: 46ch;
+}
+
+.page .title {
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+}
+
+.page .action {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-1);
+}
+
+/*
+ * The exit reads as the exit. A bare `<Link>` here inherits the global anchor
+ * rule, which is correct but quiet — inside a page-level empty state the action
+ * is the point, so it takes the weight of a control without pretending to be a
+ * filled button it is not.
+ */
+.action a {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 500;
+  text-decoration-color: var(--text-tertiary);
+}
+
+/* ── panel: sits beside real content and must not compete with it ────────── */
+
+/*
+ * No dashed border, no oversized mark, no button. The activity feed's empty
+ * state shares a screen with the matter it belongs to — a state that shouts
+ * pulls the eye off the actual content, which is the failure this layout
+ * exists to avoid.
+ */
+/*
+ * `--surface-sunken`, not `--surface-inset`.
+ *
+ * This is a quiet well one step down INSIDE a card, which is exactly what
+ * `sunken` (#F4F2EE) is for. `inset` (#E6E3DC) is a wash two steps down, and at
+ * that value the panel empty state read as a separate band sitting on the
+ * matter rather than as part of it — which is the opposite of what a panel
+ * state is supposed to do.
+ *
+ * Audited 2026-08-25 across all seven `inset` uses; this was the only one that
+ * had gone wrong when `sunken` was introduced. The other six are genuinely
+ * washes or distinct chips and stay.
+ */
+.panel {
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  background: var(--surface-sunken);
+}
+
+.panel .mark {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  color: var(--text-tertiary);
+}
+
+.panel .copy {
+  gap: var(--s-1);
+}
+
+.panel .title {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 500;
+}
+
+.panel .action {
+  margin-left: auto;
+}
+
+/* ── shared ──────────────────────────────────────────────────────────────── */
+
+.mark {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.mark > svg {
+  width: 100%;
+  height: 100%;
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .title {
   margin: 0;
-  font-family: var(--font-serif);
-  font-size: var(--text-md);
+  font-weight: 500;
   color: var(--text-primary);
+  text-wrap: balance;
 }
 
 .description {
   margin: 0;
-  max-width: 52ch;
   font-family: var(--font-sans);
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
+  line-height: 1.6;
   color: var(--text-secondary);
+  text-wrap: pretty;
 }
 
-.action {
-  margin-top: var(--s-2);
+.page .description {
+  font-size: var(--text-base);
 }
+
+/* ── kinds ───────────────────────────────────────────────────────────────── */
+
+/*
+ * A DASHED BORDER MEANS "NOT BUILT", AND NOTHING ELSE.
+ *
+ * It used to be on every empty state, which made a genuinely empty caseload
+ * look like a component that had failed to render — the exact confusion the
+ * board's own gate tests against ("ERROR — never mistaken for empty"). Reserved
+ * here for the one case where it is honest: the surface really is unfinished.
+ */
+.not-built {
+  border-style: dashed;
+  background: transparent;
+}
+
+.page.not-built {
+  min-height: 260px;
+}
+
+/*
+ * `no-match` is not a failure and must not read as one — the records exist and
+ * the filter is doing its job. It gets the same calm treatment as `nothing-yet`
+ * and differs only in its mark and in the exit the caller supplies.
+ */

@@ -9,5 +9,5 @@ import { redirect } from 'next/navigation';
  * here.
  */
 export default function Home(): never {
-  redirect('/dashboard');
+  redirect('/home');
 }

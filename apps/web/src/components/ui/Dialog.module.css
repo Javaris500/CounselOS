@@ -1,10 +1,39 @@
+/*
+ * A DIALOG NEVER SCROLLS THE PAGE BEHIND IT.
+ *
+ * There was no `max-height`, so a tall dialog — the create form with every
+ * field in error, say — simply grew past the viewport and the document scrolled
+ * underneath the backdrop. That reads as the modal escaping its own frame, and
+ * on a laptop it puts the submit button somewhere the user has to scroll the
+ * PAGE to reach while a modal is open.
+ *
+ * The dialog is now a flex column capped at the viewport; `.panel` scrolls
+ * inside it, and the footer is pinned so the primary action never leaves the
+ * screen.
+ */
+/*
+ * `display` GOES ON `[open]`, NEVER ON `.dialog`.
+ *
+ * A closed `<dialog>` is hidden by the UA's own `display: none`. Setting
+ * `display: flex` on the element unconditionally overrides that, so the dialog
+ * renders on the page at all times — open or not. It cost four browser tests
+ * the moment it landed, all failing on `toBeHidden()`, which is exactly the
+ * right way to find out.
+ */
 .dialog {
   padding: 0;
+  flex-direction: column;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface-card);
   box-shadow: var(--shadow-lg);
   max-width: min(560px, calc(100vw - var(--s-8)));
+  max-height: calc(100dvh - var(--s-14));
+  overflow: hidden;
+}
+
+.dialog[open] {
+  display: flex;
 }
 
 .dialog::backdrop {
@@ -16,6 +45,8 @@
   flex-direction: column;
   gap: var(--s-4);
   padding: var(--s-6);
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .title {
@@ -32,10 +63,19 @@
   color: var(--text-secondary);
 }
 
+/*
+ * Pinned, not scrolled with the body. `position: sticky` inside the scrolling
+ * panel keeps Cancel and the primary action on screen at every scroll position
+ * — a footer that scrolls away is a modal you cannot dismiss without hunting.
+ */
 .footer {
+  position: sticky;
+  bottom: calc(var(--s-6) * -1);
   display: flex;
   justify-content: flex-end;
   gap: var(--s-2);
-  padding-top: var(--s-3);
+  margin: 0 calc(var(--s-6) * -1) calc(var(--s-6) * -1);
+  padding: var(--s-3) var(--s-6) var(--s-4);
   border-top: 1px solid var(--border);
+  background: var(--surface-card);
 }

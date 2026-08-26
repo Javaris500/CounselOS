@@ -3,6 +3,7 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import type { TransactionDetail } from '@counselos/shared';
 
+import { useCrumbLabel } from '@/app/(attorney)/crumb';
 import { Badge, ErrorState, Skeleton, Tabs, type TabItem } from '@/components/ui';
 import { ApiError } from '@/lib/api/client';
 
@@ -79,11 +80,19 @@ export function TransactionShell({
 }): React.JSX.Element {
   const { transaction, isLoading, error } = useTransaction(transactionId);
 
+  /*
+    Hand the matter's name up to the shell's breadcrumb. This page already has
+    it, so there is nothing to fetch and no loading state — which is exactly why
+    the trail derives from the path and takes its deepest label from here rather
+    than loading one of its own.
+  */
+  useCrumbLabel(transaction?.title);
+
   if (isLoading) {
     return (
       <div className={styles.shell} data-testid="transaction-shell-loading">
-        <Skeleton rows={2} lastRowWidth="40%" />
-        <Skeleton rows={6} />
+        <Skeleton shape="paragraph" rows={2} lastRowWidth="40%" />
+        <Skeleton shape="rows" rows={6} />
       </div>
     );
   }

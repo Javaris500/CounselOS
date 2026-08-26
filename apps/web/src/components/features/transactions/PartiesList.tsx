@@ -20,6 +20,7 @@ export function PartiesList({ parties }: { parties: Party[] }): React.JSX.Elemen
   if (parties.length === 0) {
     return (
       <EmptyState
+        layout="panel"
         title="No parties recorded"
         description="Buyers, sellers, agents, title, lender — adding them is what makes “every matter where Independence Title closed” answerable later."
       />

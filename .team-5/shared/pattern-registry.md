@@ -43,6 +43,8 @@ operator flips rows to `exists` as Slice 0 lands.
 | Card / panel | `components/ui/Card` | exists | bordered surface; `accent` left rule pairs with a Badge, never colour alone |
 | Tab navigation | `components/ui/Tabs` | exists | Links not buttons, so tabs deep-link; a tab with no `href` renders DISABLED, never hidden |
 | Dropdown / select | `components/ui/Select` | exists | native `<select>`; a combobox is a separate entry with its own argument, not a widened Select |
+| Tooltip | `components/ui/Tooltip` | exists | CSS-only, collapsed-rail labels ONLY. Suppressed above 1000px, where the label is visible and a bubble repeating it is noise. Never the accessible name — the real label stays clipped in the DOM. Clips inside `overflow: hidden`, so it is the wrong tool inside the panel |
+| Breadcrumb trail | `components/ui/Breadcrumbs` | exists | last crumb is text with `aria-current`, never a link; the trail truncates from the LEFT so the record you are looking at survives |
 
 ## Registering a new primitive
 
@@ -57,6 +59,33 @@ A primitive you build and register starts at `exists` — you built it, so it do
 | 2026-08-23 | transactions | Card / panel | `components/ui/Card` | Slice 0a shipped 12 primitives and no surface. Every slice was about to invent one — a pipeline card, a party card, a deadline card — and four near-identical bordered divs is exactly the divergence this file exists to catch. |
 | 2026-08-23 | transactions | Tab navigation | `components/ui/Tabs` | The transaction detail shell is the frame five slices mount into; without a canonical strip each arriving slice would style its own. Disabled-not-hidden is the contract: a tab whose slice has not landed still shows. |
 | 2026-08-23 | transactions | Dropdown / select | `components/ui/Select` | The status control and the outcome prompt both need one, and the status control is where a wrong value is a wrong LEGAL state — native `<select>` gets keyboard, typeahead and mobile from the platform. |
+| 2026-08-25 | operator | Tooltip | `components/ui/Tooltip` | The rail collapses to icons below 1000px, and an icon-only nav nobody can read is a nav only its author can use. Deliberately narrow: it is not a general tooltip, it does not own the accessible name, and it clips inside the panel — all three stated in the file so the next consumer hits the note instead of the bug. |
+| 2026-08-25 | operator | Breadcrumb trail | `components/ui/Breadcrumbs` | This product drills matter → document → deadline → draft, and every level is a dead end without a way up that is not the browser button. The matter is the spine; the trail is how you climb it. |
+
+## Amendments — 2026-08-25, operator
+
+Append-only. No row above was rewritten.
+
+**`Card` (2026-08-23) — the `href` gap is now closed by precedent, not by the primitive.**
+Nemi's slice-1 audit found `Card` registered with zero consumers and two hand-rolled duplicates,
+because a pipeline card must be an `<a>` and `Card` has no `href` form. The data table designed on
+2026-08-25 hit the identical constraint and resolved it the same way — the whole row is a link, for
+the same reason `Tabs` are links: middle-click and open-in-new-tab are how people work a caseload.
+That is now three elements wanting one thing. **`Card` should gain an `href` variant**, and the
+decision is still Foundations'.
+
+**`Tooltip` gained `enabled`, and the reason generalises.** It decided its own visibility with a
+`@media (min-width: 1001px)` block — meaning `Tooltip.module.css` and `AppRail.module.css` had to
+agree on a breakpoint by coincidence, with nothing linking the two numbers. A user-driven collapse
+broke it on contact: the rail collapsed at any width while the bubble stayed hidden above 1000px,
+producing an icon-only nav nobody could read. **A primitive must not infer a state its caller owns.**
+
+**`Button` gained `size`, `iconLeft`/`iconRight`, `fullWidth` and `danger-outline`.** Not a new
+row — the same primitive, widened. Two things worth knowing: `danger` had **no `:hover` at all**
+until now, so the one control whose click cannot be taken back was the one that felt inert under
+the cursor; and the split between `danger` (solid, irreversible) and `danger-outline` (destructive
+but reversible) exists because legal data is soft-deleted, so dressing every delete in solid red
+trains people to click through red.
 
 ## What Nemi audits for
 

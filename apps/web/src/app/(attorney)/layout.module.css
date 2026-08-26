@@ -1,10 +1,83 @@
+/*
+ * The attorney shell.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * TWO TONES AND AN INSET, NOT A DIVIDER.
+ *
+ * The rail sits transparent on `--surface-shell` (recessed); the working
+ * surface is `--surface-card` (raised), inset 8px from three edges — never the
+ * left, where the rail already provides the gutter. The bone showing between
+ * them IS the frame. No divider line, no drop shadow doing a job a tone step
+ * does better; the shadow here is almost nothing and exists only to stop the
+ * rounded corner reading as cut out.
+ *
+ * The whole effect rests on shell sitting clearly below card, and it does in
+ * BOTH themes — light #F0EEE9 → #FAF9F6 is a 1.10 step, dark #0B0C0E → #1E2126
+ * is 1.21. An earlier note here claimed dark was the weaker one; it compared
+ * against `--surface-base`, which the panel does not use. Measured, dark's
+ * frame is the stronger of the two.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+/*
+ * `height`, NOT `min-height` — and the document must never scroll.
+ *
+ * With `min-height` the panel grew past the viewport whenever content did, so
+ * the DOCUMENT scrolled: 155px of overflow measured on the board, which is
+ * where the stray bottom scrollbar came from. Worse, that page-level scrollbar
+ * kept showing beside an open modal, which read as the modal having one of its
+ * own when the modal fit its content exactly (809/809).
+ *
+ * Fixing the height at the viewport makes `.content` the only thing that
+ * scrolls, which is what a shell is supposed to mean: chrome stays put,
+ * content moves.
+ */
 .shell {
-  min-height: 100dvh;
+  display: flex;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--surface-shell);
 }
 
-.main {
-  max-width: 1200px;
-  margin: 0 auto;
+.panel {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: var(--s-2) var(--s-2) var(--s-2) 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+/*
+ * The content scrolls, the shell does not. Without this the rail scrolls away
+ * with the table and the service status leaves the screen — which is the one
+ * thing in the rail that should always be visible.
+ */
+.content {
+  flex-grow: 1;
+  min-height: 0;
+  overflow-y: auto;
   padding: var(--s-6);
+}
+
+/*
+ * Ultra-wide cap. Past ~1440 of content a table's columns stretch until the
+ * matter title and its price are a screen apart and the row stops being
+ * readable as one line. The panel still fills the viewport — only the content
+ * inside it is capped, so the frame does not shrink away on a large monitor.
+ */
+.measure {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+@media (max-width: 1000px) {
+  .content {
+    padding: var(--s-4);
+  }
 }

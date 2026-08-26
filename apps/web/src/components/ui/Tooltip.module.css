@@ -1,0 +1,121 @@
+/*
+ * Every value is a token from globals.css. No literals — see the Tokens rule.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * CSS-ONLY, AND THE LABEL IS THE ACCESSIBLE NAME.
+ *
+ * No positioning library, no portal, no JS. The bubble is an absolutely
+ * positioned child of an anchor with `position: relative`, which is enough
+ * because every consumer today sits in the rail — a container with no
+ * `overflow: hidden` between it and the viewport. If a tooltip is ever needed
+ * inside the panel (which DOES clip, for its radius), this primitive is the
+ * wrong tool and a portal-based one is the right one. Stated here so the next
+ * person hits the note instead of the bug.
+ *
+ * The text is rendered in the DOM and clipped, never `content: attr(...)`:
+ * generated content is unreliable in the accessibility tree, and the whole
+ * point of the collapsed rail's tooltip is that the label survives.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+.anchor {
+  position: relative;
+  display: flex;
+}
+
+/*
+ * The wrapped control fills the anchor. Without this a rail row wrapped in a
+ * tooltip shrinks to its text width and the active pill stops spanning the
+ * rail — the wrapper would silently change the layout it was only supposed to
+ * annotate.
+ */
+.anchor > :first-child {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.bubble {
+  position: absolute;
+  z-index: 40;
+
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  /*
+   * `max-content` FIRST, then cap it.
+   *
+   * An absolutely positioned box sizes against its containing block, and here
+   * that is the 44px anchor — so `max-width` alone left the bubble 44px wide
+   * and "Lands with slice 3" wrapped to four lines. Sizing to content and
+   * capping at 220px is what makes the cap mean what it reads as.
+   */
+  width: max-content;
+  max-width: 220px;
+  padding: var(--s-1-5) var(--s-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-overlay);
+  box-shadow: var(--shadow-md);
+
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  color: var(--text-primary);
+  white-space: nowrap;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-micro) var(--ease-out);
+}
+
+.note {
+  color: var(--text-tertiary);
+  white-space: normal;
+}
+
+/*
+ * Hover AND focus-within. A tooltip that only answers the mouse is invisible to
+ * the keyboard path the collapsed rail otherwise supports perfectly well.
+ */
+.anchor:hover > .bubble,
+.anchor:focus-within > .bubble {
+  opacity: 1;
+}
+
+/*
+ * Only shown when the caller arms it — i.e. when the label it duplicates is NOT
+ * on screen. Expanded, a tooltip repeating a visible label is noise: the classic
+ * "tooltip that says what the button says".
+ *
+ * This was a `@media (min-width: 1001px)` block, which meant this file and the
+ * rail's stylesheet had to agree on a breakpoint by coincidence. The moment
+ * collapse became user-driven, that broke.
+ */
+.anchor[data-tooltip-enabled='false'] > .bubble {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble {
+    transition: none;
+  }
+}
+
+/* ── placement ───────────────────────────────────────────────────────────── */
+
+.anchor[data-placement='right'] > .bubble {
+  left: calc(100% + var(--s-2));
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/*
+ * Bottom placement centres on the anchor and is capped by `max-width`, which is
+ * why the trigger should sit away from the viewport edge. There is no collision
+ * detection here on purpose — see the note in Tooltip.tsx.
+ */
+.anchor[data-placement='bottom'] > .bubble {
+  top: calc(100% + var(--s-2));
+  left: 50%;
+  transform: translateX(-50%);
+}

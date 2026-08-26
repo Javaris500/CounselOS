@@ -1,0 +1,87 @@
+/* Every value is a token from globals.css. No literals — see the Tokens rule. */
+
+/*
+ * 56px, the one piece of chrome that is not compact.
+ *
+ * Attorney surfaces default to --row-compact (32px), and everything in the rail
+ * is denser than the references on purpose. This bar is the exception: it holds
+ * the trail and the page's primary action, and cramping those two reads as
+ * cheap in the first second someone looks at the product.
+ *
+ * Its 24px inset MATCHES the content padding below it, so the breadcrumb and
+ * the page title share a left edge. That alignment is the thing people notice
+ * when it is wrong and cannot name when it is right.
+ */
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  height: var(--s-14);
+  padding: 0 var(--s-6);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--surface-card);
+}
+
+.spacer {
+  flex-grow: 1;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-shrink: 0;
+}
+
+@media (max-width: 1000px) {
+  .bar {
+    padding: 0 var(--s-4);
+  }
+}
+
+/*
+ * The rail toggle. Far left, ahead of the trail.
+ *
+ * Square and unlabelled — the tooltip and `aria-label` carry the name. The
+ * chevrons flip when the rail is already collapsed, so one glyph serves both
+ * directions and the two states cannot drift apart.
+ */
+.railToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  margin-left: calc(var(--s-1) * -1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition:
+    background var(--duration-micro) var(--ease-out),
+    color var(--duration-micro) var(--ease-out);
+}
+
+.railToggle:hover {
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+}
+
+.railToggle:focus-visible {
+  outline: 2px solid var(--sl-400);
+  outline-offset: 1px;
+}
+
+.bar[data-rail-collapsed='true'] .railToggle svg {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .railToggle {
+    transition: none;
+  }
+}

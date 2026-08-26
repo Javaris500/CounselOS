@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { EmptyState } from '@/components/ui';
 
 /**
- * The morning dashboard — the attorney's home screen.
+ * Home — the attorney's first screen.
  *
  * NOT BUILT. The real aggregation is Case Ops' slice; the dashboard owns no
  * table of its own and reads through other modules' services.
@@ -32,14 +32,16 @@ import { EmptyState } from '@/components/ui';
  * sends the reader somewhere real. When Case Ops lands, this whole file goes.
  * ─────────────────────────────────────────────────────────────────────────────
  */
-export default function DashboardPage(): React.JSX.Element {
+export default function HomePage(): React.JSX.Element {
   return (
     <EmptyState
-      title="The dashboard isn’t built yet"
-      description="It lands with Case Ops and will summarise deadlines, documents and matters needing attention. Nothing here reflects your data — this page reads nothing. Matters live under Transactions."
+      kind="not-built"
+      layout="page"
+      title="Home isn’t built yet"
+      description="It lands with Case Ops and will show what needs you today — blocking items, deadlines due this week, drafts waiting on your review. Nothing here reflects your data yet; this page reads nothing. Your matters are one click away."
       action={
-        <Link href="/transactions" data-testid="dashboard-placeholder-transactions-link">
-          Go to Transactions
+        <Link href="/transactions" data-testid="home-placeholder-matters-link">
+          Go to Matters
         </Link>
       }
     />

@@ -20,3 +20,24 @@
     opacity: 0.55;
   }
 }
+
+/*
+ * Shapes — added 2026-08-25.
+ *
+ * `paragraph` keeps the original proportions, so every existing caller is
+ * unchanged. The other two exist because a text placeholder in front of a board
+ * or a table guarantees a layout jump when the data arrives.
+ */
+.rows > .row {
+  height: var(--s-10);
+  border-radius: var(--radius-sm);
+}
+
+.cards {
+  gap: var(--s-3);
+}
+
+.cards > .row {
+  height: 104px;
+  border-radius: var(--radius-lg);
+}

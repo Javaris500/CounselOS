@@ -50,6 +50,13 @@
   --surface-raised: #faf9f6; /* elevation 2/3 in light is a shadow, not a fill */
   --surface-overlay: #faf9f6; /* elevation 4 likewise — see the note below */
   --surface-inset: #e6e3dc; /* wash, inset wells */
+  /*
+   * Between shell and card — added 2026-08-25. Table headers, pagination
+   * footers, and any strip that should read as recessed INTO a panel.
+   * `--surface-inset` is too dark for this: at #E6E3DC it reads as a separate
+   * band rather than as the same surface, one step down.
+   */
+  --surface-sunken: #f4f2ee;
   --border: #dad6ce;
   --border-strong: #c2bdb3;
 
@@ -67,7 +74,19 @@
   /* ── Text — contrast ratios documented in 07 ───────────────────────────── */
   --text-primary: #1b1d1e; /* 15.6:1  AAA */
   --text-secondary: #494f53; /*  8.3:1  AAA  — use for extended reading */
-  --text-tertiary: #6e7479; /*  4.9:1 on card · 4.1:1 on paper — UI/large only */
+  /*
+   * Darkened from #6E7479 on 2026-08-25 — it failed AA on the shell.
+   *
+   * The old value carried its own warning ("4.1:1 on paper — UI/large only")
+   * and the login page then used it four times for 10-11px text directly on
+   * paper: both field labels, the lockout line, the masthead and the colophon.
+   * A tertiary that is unusable on the app's primary page background is not a
+   * tertiary, it is a trap — the caveat was doing work the value should do.
+   *
+   * This clears 4.5:1 on all three light grounds, so it is safe wherever text
+   * lands, and stays a clear step quieter than --text-secondary (7.2:1).
+   */
+  --text-tertiary: #5f6569; /*  5.1:1 paper · 5.6:1 card · 4.6:1 inset — AA everywhere */
   --text-disabled: #9c9a94; /*  2.7:1  decorative only, never information */
 
   /* ── Slate — the structural ink scale, 11 steps ────────────────────────── */
@@ -162,6 +181,21 @@
   --text-lg: 17px;
   --text-xl: 18px;
 
+  /* ── Display sizes ─────────────────────────────────────────────────────────
+   * Added 2026-08-24 for the login masthead, which is the first surface to set
+   * type above 18px. Same method as the block above — sourced from
+   * design-system-v5.html by frequency, not invented: of the sizes it uses over
+   * 18px, 24 and 32 are the most common and 40/46 carry its display moments.
+   * 46px is the artifact's ceiling, so nothing here goes above it.
+   *
+   * These are the display half of 07's "eight-step scale". If 07 ever publishes
+   * intended values, reconcile against them rather than replacing this.
+   */
+  --text-2xl: 24px;
+  --text-3xl: 32px;
+  --text-4xl: 40px;
+  --text-5xl: 46px;
+
   /* ── Spacing — 4pt grid ────────────────────────────────────────────────── */
   --s-0-5: 2px;
   --s-1: 4px;
@@ -180,6 +214,16 @@
   --radius-sm: 4px;
   --radius-md: 6px;
   --radius-lg: 8px;
+  /*
+   * Panel radius — added 2026-08-25 for the app shell.
+   *
+   * The scale above is a CONTROL scale: 8px is right for a button or a table,
+   * and a full-height panel at 8px reads as an oversized input. Radius is
+   * chosen by the SIZE of the surface, not its importance, so a surface that
+   * spans the viewport needs its own step. Same shape of gap the type scale had
+   * before the login masthead.
+   */
+  --radius-xl: 12px;
   --radius-full: 999px;
 
   /* ── Elevation — 5 layers ──────────────────────────────────────────────────
@@ -199,6 +243,23 @@
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --ease-decelerate: cubic-bezier(0, 0, 0.2, 1);
   --ease-settle: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ── Action — the primary button's surface and its text ────────────────────
+   * Added 2026-08-24. These exist because `--sl-800` and `--surface-card` are
+   * NOT a safe pair across themes, and Button.primary used them directly:
+   * the slate scale does not flip between themes (correct — a step means the
+   * same thing in both), but `--surface-card` does, so in dark the primary
+   * button rendered #1e2731 on #1e2126 — 1.07:1. Invisible, app-wide, and
+   * silent, because both halves were legitimate tokens.
+   *
+   * The lesson is the general one: a token pair is only safe if BOTH sides
+   * flip together, or NEITHER does. Pair a fixed scale with a theme-flipping
+   * surface and one theme is always wrong. Use these for any solid action
+   * surface rather than reaching into the scale.
+   */
+  --action: var(--sl-800);
+  --action-hover: var(--sl-700);
+  --action-fg: #faf9f6; /* 14.4:1 on --action */
 
   /* ── Density — attorney surfaces default compact; client page comfortable ─ */
   --row-compact: 32px;
@@ -222,18 +283,77 @@
     --surface-raised: #272b31;
     --surface-overlay: #2e333a;
     --surface-inset: #16181b;
+    --surface-sunken: #1b1e22;
     --border: #2b2f35;
     --border-strong: #3a4048;
 
     --text-primary: #f1f3f4; /* 14.6:1  AAA */
     --text-secondary: #a2a9af; /*  6.9:1  AA  */
-    --text-tertiary: #7b8288; /*  4.6:1  AA  */
+    /* 7.5:1 shell · 6.2:1 card · 5.4:1 raised · 4.7:1 overlay — AA everywhere.
+     * Was #7b8288, annotated "4.6:1 AA" — a number true only against base/inset.
+     * It measured 4.14:1 on card, which is where cards, dialogs and the detail
+     * shell all render, and 3.27:1 on overlay: four of seven surfaces below the
+     * AA floor. Quantified over every surface now, like its light counterpart,
+     * because a single ratio on a token used against seven backgrounds is not a
+     * claim that can be checked. Gated by slice-1-axe.spec.ts. */
+    --text-tertiary: #979ea4;
     --text-disabled: #4c5258; /*  2.2:1  decorative only */
 
     --urgency-info-fg: #78899a;
     --urgency-warning-fg: #d19a3c;
     --urgency-urgent-fg: #e2794e;
     --urgency-critical-fg: #e4636f;
+
+    /*
+     * Dark TINTS — added 2026-08-24.
+     *
+     * 07 published a dark foreground per tier and left the tint triple
+     * light-only, so every urgency surface — the login error, badges, the
+     * status-control refusal — painted a pale pink or amber box on a near-black
+     * page. Found by screenshotting the login page in dark, not by any test.
+     *
+     * Each tint sits 1.1-1.2:1 above the shell so it reads as a raised surface
+     * and not a light panel; text on tint clears 8.5:1; the border stays visible
+     * against its own tint. Published in 07 in the same change.
+     */
+    --urgency-info-bg: #1a2028;
+    --urgency-info-border: #33404d;
+    --urgency-info-fg-on-tint: #cdd8e1; /* 11.3:1 on tint */
+
+    --urgency-warning-bg: #241c10;
+    --urgency-warning-border: #4a3a1c;
+    --urgency-warning-fg-on-tint: #e8c37a; /* 10.0:1 on tint */
+
+    --urgency-urgent-bg: #271711;
+    --urgency-urgent-border: #4d2f20;
+    --urgency-urgent-fg-on-tint: #f0a583; /* 8.6:1 on tint */
+
+    --urgency-critical-bg: #26141a;
+    --urgency-critical-border: #4d262e;
+    --urgency-critical-fg-on-tint: #f0a3ab; /* 8.8:1 on tint */
+
+    /* ── The solid danger button inverts in dark, so these two invert with it ──
+     * `--urgency-critical-fg` is redefined above for its DARK role: light coral
+     * text on a dark surface. But `.danger` uses that same token as a solid
+     * BACKGROUND. In light both roles want the same crimson, so one token served
+     * two jobs and nobody noticed; in dark they pull opposite ways, and a
+     * near-white label on light coral measured 3.03:1 against an AA floor of 4.5.
+     *
+     * So the ink darkens (5.3:1 on the coral) and the hover LIGHTENS, which is
+     * what a hover does on a dark ground anyway.
+     *
+     * `--urgency-critical-focus` is also the focus-ring colour for both danger
+     * variants, and the light value was #75141f — 1.44:1 against --surface-card:
+     * a ring that is present, passes every automated check, and cannot be seen.
+     * WCAG 1.4.11 wants 3:1 for non-text UI; this is 6.7:1. Found by reading,
+     * not by axe — a rule engine cannot focus a control, and the existing focus
+     * test asserts an indicator EXISTS rather than that it is visible. */
+    --urgency-critical-on-solid: #26141a; /* 5.3:1 on the coral solid */
+    --urgency-critical-focus: #ee8b95; /* 7.3:1 w/ that ink · 6.7:1 ring on card */
+
+    --action: #cdd8e1;
+    --action-hover: #eaeff3;
+    --action-fg: #141a21; /* 12.9:1 on --action */
 
     --ai: #3faab8;
 
@@ -252,18 +372,58 @@
   --surface-raised: #272b31;
   --surface-overlay: #2e333a;
   --surface-inset: #16181b;
+  --surface-sunken: #1b1e22;
   --border: #2b2f35;
   --border-strong: #3a4048;
 
   --text-primary: #f1f3f4;
   --text-secondary: #a2a9af;
-  --text-tertiary: #7b8288;
+  /* Kept in lockstep with the prefers-color-scheme block above — see the
+   * per-surface note there. These two are the same palette; a fix applied to
+   * only one of them leaves the other path silently non-conformant. */
+  --text-tertiary: #979ea4;
   --text-disabled: #4c5258;
+
+  --action: #cdd8e1;
+  --action-hover: #eaeff3;
+  --action-fg: #141a21;
 
   --urgency-info-fg: #78899a;
   --urgency-warning-fg: #d19a3c;
   --urgency-urgent-fg: #e2794e;
   --urgency-critical-fg: #e4636f;
+
+  /*
+   * Dark TINTS — added 2026-08-24.
+   *
+   * 07 published a dark foreground per tier and left the tint triple
+   * light-only, so every urgency surface — the login error, badges, the
+   * status-control refusal — painted a pale pink or amber box on a near-black
+   * page. Found by screenshotting the login page in dark, not by any test.
+   *
+   * Each tint sits 1.1-1.2:1 above the shell so it reads as a raised surface
+   * and not a light panel; text on tint clears 8.5:1; the border stays visible
+   * against its own tint. Published in 07 in the same change.
+   */
+  --urgency-info-bg: #1a2028;
+  --urgency-info-border: #33404d;
+  --urgency-info-fg-on-tint: #cdd8e1; /* 11.3:1 on tint */
+
+  --urgency-warning-bg: #241c10;
+  --urgency-warning-border: #4a3a1c;
+  --urgency-warning-fg-on-tint: #e8c37a; /* 10.0:1 on tint */
+
+  --urgency-urgent-bg: #271711;
+  --urgency-urgent-border: #4d2f20;
+  --urgency-urgent-fg-on-tint: #f0a583; /* 8.6:1 on tint */
+
+  --urgency-critical-bg: #26141a;
+  --urgency-critical-border: #4d262e;
+  --urgency-critical-fg-on-tint: #f0a3ab; /* 8.8:1 on tint */
+
+  /* Lockstep with the prefers-color-scheme block — see the note there. */
+  --urgency-critical-on-solid: #26141a;
+  --urgency-critical-focus: #ee8b95;
 
   --ai: #3faab8;
 
@@ -276,6 +436,95 @@
 
 * {
   box-sizing: border-box;
+}
+
+/*
+ * Scrollbars — added 2026-08-25.
+ *
+ * There was no scrollbar rule anywhere, so every scroll container in the
+ * product wore the operating system's default: a chunky grey bar that belongs
+ * to Windows, not to Paper & Ink. On the pipeline board — the one surface that
+ * genuinely must scroll sideways — it sat under the columns as the loudest
+ * element on the page.
+ *
+ * THINNED, NOT HIDDEN. `scrollbar-width: none` was the tempting fix and is the
+ * wrong one: a kanban board whose extra columns are invisible AND have no
+ * scrollbar is a board where nobody finds the extra columns. The affordance
+ * stays; only the chrome goes.
+ *
+ * `scrollbar-color` is the standard property (Firefox, and Chromium 121+); the
+ * `::-webkit-scrollbar` block is the fallback for older WebKit. Both are here
+ * because dropping either leaves one engine on the OS default.
+ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-full);
+  background: var(--border-strong);
+  /* Transparent border + background-clip is what insets the thumb inside the
+     track, so it reads as a hairline rather than a filled channel. */
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/*
+ * Anchors — added 2026-08-25.
+ *
+ * There was no `a` rule anywhere, so every link that did not carry its own
+ * class rendered browser-default blue and underlined. Found on the dashboard
+ * placeholder, where it was electric blue on a near-black page: off-brand in
+ * light and poor contrast in dark.
+ *
+ * A design system with no anchor default produces blue links forever, because
+ * each one looks like a local oversight rather than a missing rule. Ink with a
+ * quiet rule is the Paper & Ink answer — the underline sits below the baseline
+ * and darkens on hover, so the link reads as a link without a colour change
+ * carrying the whole signal.
+ */
+a {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--duration-micro) var(--ease-out);
+}
+
+a:hover {
+  text-decoration-color: var(--text-primary);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--sl-400);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a {
+    transition: none;
+  }
 }
 
 html,

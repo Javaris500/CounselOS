@@ -1,0 +1,58 @@
+/* Every value is a token from globals.css. No literals — see the Tokens rule. */
+
+/*
+ * A segmented control: one border around both, a 2px inset, and the pressed
+ * option filled. Two separate buttons would read as two unrelated actions
+ * rather than as one choice with two states.
+ */
+.group {
+  display: flex;
+  gap: var(--s-0-5);
+  padding: var(--s-0-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition:
+    background var(--duration-micro) var(--ease-out),
+    color var(--duration-micro) var(--ease-out);
+}
+
+.option:hover:not([aria-pressed='true']) {
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+}
+
+.option:focus-visible {
+  outline: 2px solid var(--sl-400);
+  outline-offset: 1px;
+}
+
+/*
+ * Driven by `aria-pressed`, not a class. The state a screen reader announces
+ * and the state a sighted user sees are then the SAME attribute — they cannot
+ * drift, which is exactly how a "selected" class ends up on the wrong button.
+ */
+.option[aria-pressed='true'] {
+  background: var(--action);
+  color: var(--action-fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .option {
+    transition: none;
+  }
+}

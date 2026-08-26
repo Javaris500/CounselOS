@@ -7,7 +7,9 @@ import { ApiError } from '@/lib/api/client';
 
 import { CreateTransactionDialog } from './CreateTransactionDialog';
 import { TransactionCard } from './TransactionCard';
-import { PIPELINE_COLUMNS, STATUS_LABELS } from './status-ladder';
+import { COLUMN_EMPTY, PIPELINE_COLUMNS, STATUS_LABELS } from './status-ladder';
+import { MattersList } from './MattersList';
+import { ViewSwitch, useMattersView } from './ViewSwitch';
 import { useTransactionList } from './useTransactions';
 import styles from './PipelineBoard.module.css';
 
@@ -28,6 +30,7 @@ import styles from './PipelineBoard.module.css';
 export function PipelineBoard(): React.JSX.Element {
   const { transactions, total, hasMore, isLoading, error } = useTransactionList();
   const [creating, setCreating] = useState(false);
+  const [view, setView] = useMattersView();
 
   const newMatterButton = (
     <Button variant="primary" onClick={() => setCreating(true)} data-testid="transaction-create-btn">
@@ -78,8 +81,9 @@ export function PipelineBoard(): React.JSX.Element {
       <div className={styles.page}>
         <Header count={0} action={newMatterButton} />
         <EmptyState
-          title="No active transactions"
-          description="Add your first one and CounselOS starts working immediately — deadlines extracted, documents classified, nothing to configure."
+          layout="page"
+          title="No active matters"
+          description="Open your first one and CounselOS starts working immediately — deadlines extracted from the contract, documents classified on upload, nothing to configure."
           action={newMatterButton}
         />
         {dialog}
@@ -89,7 +93,15 @@ export function PipelineBoard(): React.JSX.Element {
 
   return (
     <div className={styles.page}>
-      <Header count={total} action={newMatterButton} />
+      <Header
+        count={total}
+        action={
+          <>
+            <ViewSwitch view={view} onChange={setView} />
+            {newMatterButton}
+          </>
+        }
+      />
 
       {/* Honest about the page boundary rather than silently showing a slice. */}
       {hasMore ? (
@@ -98,6 +110,18 @@ export function PipelineBoard(): React.JSX.Element {
         </p>
       ) : null}
 
+      {view === 'list' ? <MattersList rows={rows} /> : null}
+
+      {/*
+        Conditionally rendered, NOT `hidden`.
+        
+        `hidden` sets `display: none` in the UA stylesheet, and `.board` sets
+        `display: grid` — an author rule beats a UA one, so the board rendered
+        underneath the list. Exactly the bug `<dialog>` had earlier today with
+        `display: flex` overriding its closed state. Where a component sets its
+        own `display`, `hidden` is not a hiding mechanism.
+      */}
+      {view === 'list' ? null : (
       <div className={styles.board} data-testid="transaction-pipeline">
         {PIPELINE_COLUMNS.map((status) => {
           const column = rows.filter((row) => row.status === status);
@@ -116,7 +140,14 @@ export function PipelineBoard(): React.JSX.Element {
 
               <div className={styles.stack}>
                 {column.length === 0 ? (
-                  <p className={styles.columnEmpty}>Nothing here</p>
+                  /*
+                    Not an EmptyState — a page-level state repeated per column
+                    would drown the board. One line that names what belongs in
+                    THIS rung, because "Nothing here" says neither what is true
+                    nor what to do (07, Voice). The header already carries the
+                    count, so this never repeats it.
+                  */
+                  <p className={styles.columnEmpty}>{COLUMN_EMPTY[status]}</p>
                 ) : (
                   column.map((transaction) => (
                     <TransactionCard key={transaction.id} transaction={transaction} />
@@ -127,6 +158,7 @@ export function PipelineBoard(): React.JSX.Element {
           );
         })}
       </div>
+      )}
 
       {dialog}
     </div>
@@ -143,7 +175,14 @@ function Header({
   return (
     <header className={styles.header}>
       <div>
-        <h1 className={styles.heading}>Transactions</h1>
+        {/*
+          "Matters", not "Transactions". The rail, the docs and the attorneys
+          all say matter; only this heading said transaction, and a product that
+          calls one thing two names makes people wonder whether they are two
+          things. The TABLE is `transactions` and stays that way — the schema is
+          not the vocabulary.
+        */}
+        <h1 className={styles.heading}>Matters</h1>
         {count === null ? null : (
           <p className={styles.subheading}>
             {count} {count === 1 ? 'matter' : 'matters'}

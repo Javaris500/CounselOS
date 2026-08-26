@@ -47,8 +47,9 @@ export function ActivityFeed({ transactionId }: { transactionId: string }): Reac
   if (!entries || entries.length === 0) {
     return (
       <EmptyState
+        layout="panel"
         title="Nothing has happened yet"
-        description="Every change to this matter lands here — status moves, uploads, deadlines, who did what and when."
+        description="Every change to this matter lands here — status moves, uploads, deadlines, who did what and when. It fills itself; there is nothing to set up."
       />
     );
   }

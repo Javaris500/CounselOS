@@ -28,6 +28,29 @@ export const PIPELINE_COLUMNS: readonly TransactionStatus[] = [
   'FALLEN_THROUGH',
 ];
 
+/**
+ * What an empty column says, per rung.
+ *
+ * "Nothing here" was the previous copy and it is the empty state an attorney
+ * reads most, because five to seven of them render at once on a quiet board.
+ * It says neither what is true nor what to do — the two things 07's voice
+ * section asks of an empty state.
+ *
+ * Each line names what belongs in THIS rung, so the board teaches the ladder
+ * while it is empty. No line repeats the count; the header already has it, and
+ * no line invites an action, because a matter arrives in a column by moving
+ * through the transition map, never by being created there.
+ */
+export const COLUMN_EMPTY: Record<TransactionStatus, string> = {
+  INTAKE: 'New matters land here first.',
+  UNDER_CONTRACT: 'Nothing under contract right now.',
+  DUE_DILIGENCE: 'No matters in due diligence.',
+  TITLE_REVIEW: 'Nothing awaiting title review.',
+  CLOSING_PREP: 'Nothing closing yet.',
+  CLOSED: 'No matters closed in this view.',
+  FALLEN_THROUGH: 'Nothing has fallen through.',
+};
+
 export const STATUS_LABELS: Record<TransactionStatus, string> = {
   INTAKE: 'Intake',
   UNDER_CONTRACT: 'Under Contract',

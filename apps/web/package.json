@@ -25,6 +25,7 @@
     "zustand": "catalog:"
   },
   "devDependencies": {
+    "@axe-core/playwright": "catalog:",
     "@counselos/config": "workspace:*",
     "@playwright/test": "catalog:",
     "@types/node": "catalog:",

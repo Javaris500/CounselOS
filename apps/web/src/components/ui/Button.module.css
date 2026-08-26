@@ -1,17 +1,53 @@
 /* Every value is a token from globals.css. No literals — see the Tokens rule. */
+
 .button {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: var(--s-2);
-  padding: var(--s-1-5) var(--s-3);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   border: 1px solid transparent;
   font-family: var(--font-sans);
-  font-size: var(--text-base);
   font-weight: 500;
   line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
-  transition: background var(--duration-micro) var(--ease-out);
+  transition:
+    background var(--duration-micro) var(--ease-out),
+    border-color var(--duration-micro) var(--ease-out);
+}
+
+/* ── sizes ───────────────────────────────────────────────────────────────── */
+
+/*
+ * Height, not vertical padding. Padding-derived height drifts the moment a
+ * button holds an icon whose box is taller than the text, so two buttons in one
+ * row end up 1px apart — the exact class of near-miss the 2px rule is about.
+ */
+.sm {
+  height: 28px;
+  padding: 0 var(--s-2);
+  font-size: var(--text-sm);
+}
+
+.md {
+  height: 36px;
+  padding: 0 var(--s-3);
+  font-size: var(--text-base);
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.icon {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .button:disabled {
@@ -25,13 +61,29 @@
   outline-offset: 2px;
 }
 
+/* ── variants ────────────────────────────────────────────────────────────── */
+
+/*
+ * `--action` / `--action-fg`, never `--sl-800` / `--surface-card`.
+ *
+ * Those two were the original pair and they are not safe together: the slate
+ * scale is fixed across themes while `--surface-card` flips, so dark mode
+ * rendered #1e2731 on #1e2126 — 1.07:1, an invisible button on every screen.
+ * Found 2026-08-24 by screenshotting the login page in dark. See the Action
+ * block in globals.css.
+ */
 .primary {
-  background: var(--sl-800);
-  border-color: var(--sl-800);
-  color: var(--surface-card);
+  background: var(--action);
+  border-color: var(--action);
+  color: var(--action-fg);
 }
 .primary:hover:not(:disabled) {
-  background: var(--sl-700);
+  background: var(--action-hover);
+  border-color: var(--action-hover);
+}
+.primary:active:not(:disabled) {
+  background: var(--action);
+  border-color: var(--action);
 }
 
 .secondary {
@@ -40,6 +92,10 @@
   color: var(--text-primary);
 }
 .secondary:hover:not(:disabled) {
+  background: var(--surface-sunken);
+  border-color: var(--border-strong);
+}
+.secondary:active:not(:disabled) {
   background: var(--surface-inset);
 }
 
@@ -48,14 +104,55 @@
   color: var(--text-secondary);
 }
 .ghost:hover:not(:disabled) {
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+}
+.ghost:active:not(:disabled) {
   background: var(--surface-inset);
 }
 
+/*
+ * Solid crimson — irreversible only. `:hover` was missing here entirely until
+ * 2026-08-25: the one control in the set where nothing happened on hover was
+ * the one whose click cannot be taken back, so it read as inert at exactly the
+ * moment a user wants confirmation they are on the right target.
+ */
 .danger {
   background: var(--urgency-critical-fg);
   border-color: var(--urgency-critical-fg);
   color: var(--urgency-critical-on-solid);
 }
+.danger:hover:not(:disabled) {
+  background: var(--urgency-critical-focus);
+  border-color: var(--urgency-critical-focus);
+}
+.danger:active:not(:disabled) {
+  background: var(--urgency-critical-fg);
+}
 .danger:focus-visible {
   outline-color: var(--urgency-critical-focus);
+}
+
+/* Destructive but reversible — which, under soft delete, is most of them. */
+.danger-outline {
+  background: transparent;
+  border-color: var(--urgency-critical-border);
+  color: var(--urgency-critical-fg);
+}
+.danger-outline:hover:not(:disabled) {
+  background: var(--urgency-critical-bg);
+  border-color: var(--urgency-critical-fg);
+}
+.danger-outline:active:not(:disabled) {
+  background: var(--urgency-critical-bg);
+  border-color: var(--urgency-critical-focus);
+}
+.danger-outline:focus-visible {
+  outline-color: var(--urgency-critical-focus);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
 }

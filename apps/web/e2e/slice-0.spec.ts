@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 /**
  * SLICE 0 — THE FOUNDATION GATE (00-developer-guide.md §7).
  *
- *   login → dashboard · expired token silently refreshes · deactivated user
+ *   login → home · expired token silently refreshes · deactivated user
  *   lands on /auth/deactivated · paralegal denied an unassigned matter sees the
  *   explaining error
  *
@@ -43,17 +43,17 @@ test.beforeEach(async () => {
 });
 
 test.describe('Slice 0 gate', () => {
-  test('login → dashboard', async ({ page }) => {
+  test('login → home', async ({ page }) => {
     await signIn(page, ATTORNEY);
 
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page).toHaveURL(/\/home$/);
     await expect(page.getByTestId('ui-empty-state')).toBeVisible();
   });
 
   test('an unauthenticated visit to a protected page goes to login', async ({ page }) => {
     // The guard lives in the layout, so this holds for every attorney route
     // that will ever exist — not just the ones someone remembered to protect.
-    await page.goto('/dashboard');
+    await page.goto('/home');
     await expect(page).toHaveURL(/\/auth\/login$/);
   });
 
@@ -62,11 +62,11 @@ test.describe('Slice 0 gate', () => {
     // mechanism that makes that cost nothing — and the same mechanism
     // storageState relies on for every later slice's tests.
     await signIn(page, ATTORNEY);
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page).toHaveURL(/\/home$/);
 
     await page.reload();
 
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page).toHaveURL(/\/home$/);
     await expect(page.getByTestId('ui-empty-state')).toBeVisible();
   });
 
@@ -78,12 +78,12 @@ test.describe('Slice 0 gate', () => {
     // and retry — all without the user seeing a login screen.
     await setAccessTokenTtl(2);
     await signIn(page, ATTORNEY);
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page).toHaveURL(/\/home$/);
 
     await page.waitForTimeout(3000);
     await page.reload();
 
-    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page).toHaveURL(/\/home$/);
     await expect(page.getByTestId('ui-empty-state')).toBeVisible();
   });
 

@@ -173,10 +173,19 @@ test.describe('Pipeline board', () => {
       ),
     ).toBeVisible();
 
-    // An empty column says so rather than collapsing — the ladder stays legible.
+    /*
+      An empty column says so rather than collapsing — the ladder stays legible.
+
+      The copy changed 2026-08-25: "Nothing here" became a line per rung, so an
+      empty board teaches the ladder instead of repeating one blank phrase five
+      times. The assertion follows the requirement rather than pinning the old
+      words, but it still checks the COLUMN'S OWN sentence — a generic
+      `toContainText('No matters')` would pass against any column's copy landing
+      in any column, which is the bug this test exists to catch.
+    */
     await expect(
       page.locator('[data-testid="pipeline-column"][data-status="CLOSED"]'),
-    ).toContainText('Nothing here');
+    ).toContainText('No matters closed in this view.');
   });
 });
 

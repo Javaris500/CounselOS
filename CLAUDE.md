@@ -170,6 +170,13 @@ Full detail in `docs/06-frontend-architecture.md`. The load-bearing decisions:
 
 Visual design: `docs/07-design-handoff.md` + `docs/design-system-v5.html` (Design System v5 "Paper & Ink" tokens → `styles/globals.css`).
 
+**Every new screen or component runs `ui-ux-design-checklist.md` (repo root) before it ships** — the relevant sections, not all of them. It is the polish gate: shell layout, page hierarchy, the four states, interactive states, motion, and the edge cases that are the real test. Two standing conflicts with it, both resolved in the design system's favour and worth knowing so nobody re-litigates them:
+
+- **"Max 2 typefaces"** — we ship three. Newsreader carries legal gravity, Inter carries UI, and JetBrains Mono exists for `tabular-nums` on figures, dates and matter numbers. A third face earning a functional job is not the failure that rule guards against.
+- **"Micro-interactions 100–200ms"** — `--duration-micro` is 80ms, for hover only. State changes use `--duration-standard` (140ms), which is inside the range.
+
+Everything else in that doc is binding. When it and a token disagree on contrast, the checklist wins: AA is a floor, not a preference.
+
 ---
 
 ## Commands

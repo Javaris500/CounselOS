@@ -6,10 +6,15 @@
  * the same element across slices is the failure the registry exists to prevent,
  * and it is invisible in review because each one looks reasonable alone.
  */
-export { Button, type ButtonProps, type ButtonVariant } from './Button';
+export { Button, type ButtonProps, type ButtonVariant, type ButtonSize } from './Button';
 export { Spinner } from './Spinner';
 export { Skeleton, type SkeletonProps } from './Skeleton';
-export { EmptyState, type EmptyStateProps } from './EmptyState';
+export {
+  EmptyState,
+  type EmptyStateProps,
+  type EmptyStateKind,
+  type EmptyStateLayout,
+} from './EmptyState';
 export { ErrorState, type ErrorStateProps } from './ErrorState';
 export { Badge, type BadgeProps, type BadgeTone } from './Badge';
 export { AiMarker, type AiMarkerProps } from './AiMarker';
@@ -21,3 +26,5 @@ export { useZodForm, applyServerErrors, Field, type FieldProps } from './Form';
 export { Card, type CardProps } from './Card';
 export { Tabs, type TabItem, type TabsProps } from './Tabs';
 export { Select, type SelectOption, type SelectProps } from './Select';
+export { Tooltip, type TooltipProps } from './Tooltip';
+export { Breadcrumbs, type Crumb } from './Breadcrumbs';

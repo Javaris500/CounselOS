@@ -119,6 +119,20 @@ Sage is **not** a general-purpose brand color. It marks what's been filed, recei
 | URGENT | `#FBEEE8` | `#E7C3B0` | `#8A3818` |
 | CRITICAL | `#FAEDEE` | `#E3BEC3` | `#7C1622` |
 
+**The dark tint family — published 2026-08-24.** The table above is light-only, and the dark column
+further up gives only the foreground. That gap meant every urgency surface painted a pale box on a
+near-black page; found by screenshotting, not by a test.
+
+| Tier | Background | Border | Text on tint |
+|---|---|---|---|
+| INFO | `#1A2028` | `#33404D` | `#CDD8E1` (11.3:1) |
+| WARNING | `#241C10` | `#4A3A1C` | `#E8C37A` (10.0:1) |
+| URGENT | `#271711` | `#4D2F20` | `#F0A583` (8.6:1) |
+| CRITICAL | `#26141A` | `#4D262E` | `#F0A3AB` (8.8:1) |
+
+Each tint sits 1.1–1.2:1 above the dark shell, so it reads as a raised surface rather than a light
+panel, and each border stays visible against its own tint.
+
 Solid crimson buttons take `#FAF3F4` text and a `#75141F` focus ring. INFO's triple comes straight from the slate scale; the completed/sage badge does the same — `#EEF3EC` / `#C2D6BC` / `#22331E`.
 
 ### AI marker
@@ -142,7 +156,12 @@ JetBrains Mono    400/500/700        data, IDs, dates, amounts — tabular-nums
 
 Eight-step size scale. Mono uses `font-variant-numeric: tabular-nums` so columns of figures align.
 
-**The scale's values are not published here, and should be.** `globals.css` tokenises the sizes `design-system-v5.html` actually uses — `10 · 11 · 12 · 13 · 16 · 17 · 18` — sourced from the artifact by frequency (11px and 12px carry most of the UI; 10px the dense metadata). Larger display sizes up to 46px appear in the artifact but are not yet tokenised because nothing in Slice 0 renders at that scale. Publish the intended eight steps here and reconcile `globals.css` against them.
+**The display half of the scale is published, 2026-08-24:** `--text-2xl: 24px`, `--text-3xl: 32px`,
+`--text-4xl: 40px`, `--text-5xl: 46px` — sourced from `design-system-v5.html` by frequency, the same
+method as the UI sizes, and capped at the artifact's own 46px ceiling. The login masthead is the
+first surface to set type above 18px.
+
+**The UI half's values are not published here, and should be.** `globals.css` tokenises the sizes `design-system-v5.html` actually uses — `10 · 11 · 12 · 13 · 16 · 17 · 18` — sourced from the artifact by frequency (11px and 12px carry most of the UI; 10px the dense metadata). Larger display sizes up to 46px appear in the artifact but are not yet tokenised because nothing in Slice 0 renders at that scale. Publish the intended eight steps here and reconcile `globals.css` against them.
 
 ### Spacing — 4pt grid
 

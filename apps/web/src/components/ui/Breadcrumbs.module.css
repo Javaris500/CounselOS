@@ -1,0 +1,85 @@
+/* Every value is a token from globals.css. No literals — see the Tokens rule. */
+
+.nav {
+  display: flex;
+  min-width: 0;
+}
+
+.list {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.link {
+  font-size: var(--text-base);
+  color: var(--text-tertiary);
+  text-decoration: none;
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color var(--duration-micro) var(--ease-out);
+}
+
+.link:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--sl-400);
+  outline-offset: 2px;
+}
+
+/*
+ * The last crumb is where you ARE. It is not a link — a link to the current
+ * page is a control that does nothing, and it takes a tab stop to do it.
+ */
+.current {
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * The trail truncates from the LEFT, not the right. "Matters / … / 2847 Manor
+ * Rd" keeps the thing you are looking at; truncating the other way keeps the
+ * ancestors and hides the answer.
+ */
+.item:last-child {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.item:not(:last-child) {
+  flex-shrink: 2;
+}
+
+.sep {
+  flex-shrink: 0;
+  color: var(--text-disabled);
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link {
+    transition: none;
+  }
+}

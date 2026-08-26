@@ -533,7 +533,29 @@ Playwright imports the same constants the seed uses — the test and the fixture
 
 `attorney2` exists solely so the matter-access tests have a subject. Without an unassigned attorney you can't test the READ_ONLY path or the `NOT_ASSIGNED` error.
 
-All test users share password `TestPassword123!` in dev/CI only. Never in staging or production.
+All test users share password `test-password-not-a-secret` — corrected 2026-08-25; this line said
+`TestPassword123!`, which has never been the value. The single source is `FIXTURE_PASSWORD` in
+`apps/web/e2e/fixtures/seed.ts`; if it ever moves, this line is stale again.
+
+> **It only works against the fake auth server, not against `pnpm dev` as configured.**
+> `apps/api/test/fake-supabase-auth.ts` is started by `playwright.config.ts`, which also overrides
+> `SUPABASE_URL` to point the API at it. Plain `pnpm dev` reads `apps/api/.env`, which points at the
+> real Supabase project — where these users have no password — so a login there returns a genuine
+> 401 and the form reports *"That email and password combination was not recognised."* The
+> credentials were never checked. This is the actionable-and-futile pattern again
+> (`.team-5/findings/operator-slice-1-error-message-pattern-findings.md`), third instance.
+>
+> To sign in during `pnpm dev`, start the fake server and point the API at it:
+>
+> ```bash
+> FAKE_SUPABASE_PORT=54321 pnpm --filter @counselos/api exec tsx test/fake-supabase-auth.ts &
+> SUPABASE_URL=http://127.0.0.1:54321 \
+>   SUPABASE_ANON_KEY=fake-publishable-key \
+>   SUPABASE_SERVICE_KEY=fake-secret-key \
+>   pnpm --filter @counselos/api dev
+> ```
+>
+> Never in staging or production.
 
 ### Auth via `storageState` — do not log in every test
 

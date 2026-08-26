@@ -1,52 +1,338 @@
+/*
+ * The masthead login — Design System v5, "Paper & Ink".
+ *
+ * The page is composed as a DOCUMENT, not as a card on a field: a rule at the
+ * top, a colophon at the foot, and the sign-in column set against a statement
+ * of what the product is. Newsreader does real work here at --text-5xl, which
+ * is the first place in the app it does; every other screen behind this one is
+ * utilitarian by design, and the front door is the one place that can afford
+ * gravity.
+ *
+ * Every value is a token from globals.css. No literals — see the Tokens rule.
+ */
+
 .page {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: var(--s-10);
   min-height: 100dvh;
+  padding: var(--s-8) var(--s-10);
+  box-sizing: border-box;
   background: var(--surface-shell);
-  padding: var(--s-6);
+  font-family: var(--font-sans);
 }
 
-.card {
-  width: min(380px, 100%);
-  padding: var(--s-8);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  background: var(--surface-card);
-  box-shadow: var(--shadow-sm);
+/* ── masthead + colophon ─────────────────────────────────────────────────── */
+
+.masthead,
+.colophon {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
 }
 
-.title {
-  margin: 0 0 var(--s-6);
-  font-family: var(--font-serif);
-  font-size: var(--text-xl);
+.mastheadRow,
+.colophonRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-4);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
   font-weight: 500;
+  letter-spacing: 0.09em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-tertiary);
+}
+
+/*
+ * Optical, not mathematical. `letter-spacing` adds its space AFTER the final
+ * glyph too, so a right-aligned tracked label stops ~1px short of the rule
+ * beneath it and reads as a misalignment nobody can name. Pulling the trailing
+ * space back is the fix; it is invisible until you look at 200%.
+ */
+.mastheadRow > :last-child,
+.colophonRow > :last-child {
+  margin-right: -0.09em;
+}
+
+.rule {
+  height: 1px;
+  background: var(--border-strong);
+}
+
+.ruleFaint {
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── the composition ─────────────────────────────────────────────────────── */
+
+/*
+ * The composition sits LOW, not centred.
+ *
+ * Centred, it floated in the middle of a tall page with matched dead space
+ * above and below — which reads as an accident of `min-height`, not as a
+ * choice. `margin-top: auto` pushes it down so the open paper above it is the
+ * composition rather than the leftover, and the sign-in column lands nearer
+ * the thumb. The colophon keeps its own place at the foot.
+ *
+ * The top margin belongs in THIS rule. Set in a second `.composition` block it
+ * was silently cancelled by the `margin` shorthand here — same specificity,
+ * later wins, no warning.
+ */
+.composition {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: var(--s-8);
+  /*
+   * TOPS, not bottoms. The two columns differ in height by about half, so
+   * aligning their bottoms drove their tops apart and opened a diagonal void
+   * across the upper page. Aligned at the top, the headline and the SIGN IN
+   * label share one line — which is the relationship a masthead layout is
+   * for — and the surplus falls below the short column, where it reads as
+   * margin instead of as a hole.
+   *
+   * Centred vertically, not anchored low. Anchored, the surplus all collected
+   * above the composition and read as content that had fallen down the page;
+   * split evenly between the masthead rule and the colophon it reads as a
+   * title page, which is what this layout is.
+   */
+  align-items: start;
+  width: 100%;
+  max-width: 1360px;
+  margin: auto;
+}
+
+.statement {
+  grid-column: span 6;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-6);
+}
+
+.headline {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: var(--text-5xl);
+  font-weight: 400;
+  line-height: 1.06;
+  letter-spacing: -0.015em;
   color: var(--text-primary);
+  text-wrap: balance;
+}
+
+.lede {
+  margin: 0;
+  max-width: 54ch;
+  font-size: var(--text-base);
+  line-height: 1.75;
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+
+/* ── the form column ─────────────────────────────────────────────────────── */
+
+.formColumn {
+  grid-column: 8 / span 5;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+}
+
+.formLabel {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  color: var(--text-tertiary);
+}
+
+/*
+ * Field owns the label/control/error wiring and the aria-describedby that makes
+ * an error announced rather than merely coloured, so it is used as-is and
+ * restyled from here by element rather than forked. `components/ui/` belongs to
+ * Foundations; a slice restyling a primitive it does not own is how two Fields
+ * come to exist.
+ */
+.form :is(label) {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+/* Field carries a bottom margin for stacked forms; this column uses gap. */
+.form > div {
+  margin-bottom: 0;
 }
 
 .input {
   width: 100%;
-  padding: var(--s-2) var(--s-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--surface-card);
+  box-sizing: border-box;
+  padding: 0 0 var(--s-2);
+  border: none;
+  border-bottom: 1px solid var(--border-strong);
+  border-radius: 0;
+  background: transparent;
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: var(--text-base);
+  font-size: var(--text-md);
+  transition: border-color var(--duration-micro) var(--ease-out);
 }
 
-.input:focus-visible {
-  outline: 2px solid var(--sl-400);
-  outline-offset: 1px;
+.input::placeholder {
+  color: var(--text-disabled);
 }
+
+.input:hover:not(:focus-visible) {
+  border-bottom-color: var(--text-tertiary);
+}
+
+/*
+ * The underline IS the focus affordance, so it thickens rather than relying on
+ * an outline ring that would float away from a borderless control. The outline
+ * stays as well — Windows high-contrast and forced-colors repaint borders and
+ * would otherwise leave focus invisible.
+ */
+.input:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  border-bottom-color: var(--text-primary);
+  box-shadow: 0 1px 0 0 var(--text-primary);
+}
+
+@media (forced-colors: active) {
+  .input:focus-visible {
+    outline-color: Highlight;
+  }
+}
+
+/*
+ * Chrome paints its own autofill background, which erases a transparent field
+ * and takes the text colour with it. The inset shadow repaints the surface;
+ * -webkit-text-fill-color is the only thing that wins on the text.
+ */
+.input:-webkit-autofill,
+.input:-webkit-autofill:hover,
+.input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-primary);
+  -webkit-box-shadow: 0 0 0 100px var(--surface-shell) inset;
+  caret-color: var(--text-primary);
+}
+
+/* ── submit ──────────────────────────────────────────────────────────────── */
+
+/*
+ * The control is the registry `Button`; this slot only carries the two things
+ * that are genuinely local to a page-sized submit — its height, and the
+ * space-between layout that pushes the arrow to the far edge. Everything else
+ * (hover, active, focus, disabled, loading) belongs to the primitive and is no
+ * longer restated here.
+ */
+.submitSlot {
+  display: flex;
+}
+
+.submitSlot > button {
+  min-height: var(--s-14);
+  justify-content: space-between;
+  padding: 0 var(--s-5);
+}
+
+/* ── the one error every failure gets ────────────────────────────────────── */
 
 .error {
-  margin: 0 0 var(--s-4);
-  padding: var(--s-2) var(--s-3);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-2);
+  margin: 0;
+  /*
+   * Horizontal padding matches the submit's (--s-5), not --s-3.
+   *
+   * Found at 200%: bare text in this column starts at 0, the button label at
+   * 20px, and the error sat at 12px — three left edges where there should be
+   * two. Both of these are filled surfaces, so they share one inset and the
+   * column reads as a system instead of as three near-misses.
+   */
+  padding: var(--s-2) var(--s-5);
   border: 1px solid var(--urgency-critical-border);
   border-radius: var(--radius-sm);
   background: var(--urgency-critical-bg);
   color: var(--urgency-critical-fg-on-tint);
-  font-family: var(--font-sans);
   font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+/*
+ * 2px, not 1. The line box is 12px x 1.5 = 18px and the icon is 14px, so
+ * (18 - 14) / 2 = 2px centres it on the first line. 1px was a guess and reads
+ * high at 200% — the exact case the 2px rule is about.
+ */
+.errorIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ── the honest replacement for a forgot-password link ───────────────────── */
+
+.lockout {
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: 1.55;
+  color: var(--text-tertiary);
+  text-wrap: pretty;
+}
+
+/* ── responsive ──────────────────────────────────────────────────────────── */
+
+/*
+ * Below 1000px the two columns stop being a composition and start being a
+ * squeeze, so the statement moves above the form and the headline steps down
+ * two sizes. It is kept rather than hidden: it is the only place the product
+ * says what it is.
+ */
+@media (max-width: 1000px) {
+  .page {
+    padding: var(--s-6);
+    gap: var(--s-8);
+  }
+
+  .composition {
+    margin: 0 auto;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s-10);
+    align-items: start;
+    max-width: 560px;
+  }
+
+  .statement,
+  .formColumn {
+    grid-column: 1 / -1;
+  }
+
+  .headline {
+    font-size: var(--text-3xl);
+  }
+}
+
+@media (max-width: 480px) {
+  .headline {
+    font-size: var(--text-2xl);
+  }
+
+  .colophonRow span:last-child {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .input {
+    transition: none;
+  }
 }

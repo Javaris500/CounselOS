@@ -77,6 +77,10 @@
 .columnEmpty {
   margin: 0;
   padding: var(--s-2);
-  color: var(--text-disabled);
+  /* NOT --text-disabled, whose own definition in globals.css reads "decorative
+   * only, never information". This is the empty state — the column's entire
+   * message in that condition — and it measured 2.67:1 light / 2.04:1 dark
+   * against an AA floor of 4.5:1. */
+  color: var(--text-tertiary);
   font-size: var(--text-xs);
 }
